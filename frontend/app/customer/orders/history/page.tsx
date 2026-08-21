@@ -460,7 +460,7 @@ export default function OrderRefill() {
               <div className="space-y-2">
                 <h4 className="font-semibold text-xs text-slate-900">Delivery Address</h4>
                 <div className="flex items-start gap-2.5 text-xs text-slate-600">
-                  <MapPin className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                  <MapPin className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
                   <p>12, Adekunle street, Ikeja GRA, Lagos State.</p>
                 </div>
               </div>
@@ -470,7 +470,7 @@ export default function OrderRefill() {
                 <h4 className="font-semibold text-xs text-slate-900">Delivery Personnel</h4>
                 <div className="flex items-center justify-between bg-slate-50 p-2 rounded-xl border border-slate-100">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-10 h-10 rounded-full bg-slate-300 overflow-hidden flex-shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-slate-300 overflow-hidden shrink-0">
                       <img
                         src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80"
                         alt="Personnel"
@@ -501,7 +501,7 @@ export default function OrderRefill() {
                   return (
                     <div key={idx} className="flex items-start gap-3 relative z-10">
                       <div
-                        className={`w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px] flex-shrink-0 ${
+                        className={`w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px] shrink-0 ${
                           isCompleted
                             ? "bg-blue-900"
                             : isCurrent
@@ -524,7 +524,7 @@ export default function OrderRefill() {
 
               {/* Verification Note */}
               <div className="bg-slate-100/70 p-3 rounded-xl flex items-center gap-2.5 text-xs text-slate-600 border border-slate-200/60">
-                <ShieldCheck className="w-5 h-5 text-blue-800 flex-shrink-0" />
+                <ShieldCheck className="w-5 h-5 text-blue-800 shrink-0" />
                 <p className="text-[11px] leading-snug">
                   Your delivery personnel is verified and trained to ensure safe delivery
                 </p>
