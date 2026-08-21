@@ -4,7 +4,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Flame } from "lucide-react";
 
-// 1. Strongly typed dataset matching your team's structural conventions
+
 interface AboutParagraphSection {
   title?: string;
   paragraphs: string[];
@@ -34,10 +34,10 @@ export default function AboutPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
-  // Extracts '?role=customer' or '?role=vendor' from the URL path string
+ 
   const userRole = searchParams.get("role");
 
-  // Dynamic back navigation configuration based on active user portal context
+ 
   const handleBackNavigation = () => {
     if (userRole === "customer") {
       router.push("/customer/profile");
@@ -48,7 +48,7 @@ export default function AboutPage() {
     }
   };
 
-  // Text label customization for the button
+
   const getButtonLabel = () => {
     if (userRole === "customer") return "Return to Customer Profile";
     if (userRole === "vendor") return "Return to Vendor Profile";
@@ -57,7 +57,7 @@ export default function AboutPage() {
 
   return (
     <main className="min-h-screen bg-background text-left">
-      {/* Replicated Official App Header */}
+    
       <header className="flex items-center justify-between bg-brand-900 px-6 py-4 md:px-12">
         <Link href="/" className="flex items-center gap-1.5 text-lg font-bold text-white">
           <Flame size={18} className="text-notify-400" fill="currentColor" />
@@ -75,13 +75,12 @@ export default function AboutPage() {
         </nav>
       </header>
 
-      {/* Content Canvas Layout - Matching T&C widths perfectly */}
+      
       <div className="mx-auto max-w-3xl px-6 py-10">
         <h1 className="text-3xl font-bold text-ink-500">
           About FlameIntel
         </h1>
 
-        {/* Content Box using your team's custom border-dashed variables */}
         <div className="mt-6 rounded-lg border border-dashed border-brand-300 bg-brand-50/30 p-6 space-y-6">
           {ABOUT_CONTENT.map((section, sectionIdx) => (
             <div key={sectionIdx} className="space-y-3">
