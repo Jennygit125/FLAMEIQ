@@ -734,7 +734,7 @@ app.use('/api/reviews', reviewRoutes);
  *       202:
  *         description: Prediction generation has been accepted and is processing in the background.
  */
-app.post('/api/predictions', aiService.getRefillPrediction);
+app.post('/api/predictions', authenticate, aiService.getRefillPrediction);
 /**
  * @swagger
  * /api/chat
@@ -742,7 +742,7 @@ app.post('/api/predictions', aiService.getRefillPrediction);
  *   name: chat
  *   description: API for ai chat
  */
-app.post('/api/chat', aiService.getChatReply)
+app.post('/api/chat', authenticate, aiService.getChatReply)
 // --- Payout Routes ---
 /**
  * @swagger
