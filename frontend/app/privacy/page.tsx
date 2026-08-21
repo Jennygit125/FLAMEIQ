@@ -81,7 +81,6 @@ export default function PrivacyPolicyPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
-  // Dynamic role parsing straight out of URL params (?role=customer or ?role=vendor)
   const userRole = searchParams.get("role");
 
   const handleBackNavigation = () => {
@@ -162,7 +161,6 @@ export default function PrivacyPolicyPage() {
           <p className="mt-1 text-xs">Last updated: August 2026</p>
         </div>
 
-        {/* Context-Aware Profile Redirection Action Button */}
         <button
           onClick={handleBackNavigation}
           className="mt-6 w-full rounded-lg bg-brand-500 px-5 py-3 text-sm font-semibold text-white hover:bg-brand-hover transition-all"
