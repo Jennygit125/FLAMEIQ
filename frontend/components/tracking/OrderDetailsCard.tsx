@@ -38,7 +38,7 @@ export default function OrderDetailsCard() {
         </div>
         <div className="flex items-center justify-between">
           <dt className="text-muted-500">Delivery Fee</dt>
-          <dd className="font-medium text-ink-500">N800</dd>
+          <dd className="font-medium text-ink-500">N1,000</dd>
         </div>
         <div className="flex items-center justify-between">
           <dt className="text-muted-500">Order Date</dt>

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -58,6 +59,7 @@ export default function Sidebar({
   onClose: () => void;
 }) {
   const items = NAV_ITEMS[portal];
+  const pathname = usePathname();
   const [lightMode, setLightMode] = useState(true);
 
   return (
@@ -88,16 +90,37 @@ export default function Sidebar({
         </div>
 
         <div className="flex flex-1 flex-col gap-1">
-          {items.map(({ path, label, icon: Icon }) => (
-            <Link
-              key={path}
-              href={`/${portal}/${path}`}
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-ink-500 hover:bg-brand-50"
-            >
-              <Icon size={17} className="text-muted-500" />
-              {label}
-            </Link>
-          ))}
+          {items.map(({ path, label, icon: Icon }) => {
+            const href = `/${portal}/${path}`;
+            const isActive =
+              pathname === href || pathname?.startsWith(`${href}/`);
+
+            return (
+              <Link
+                key={path}
+                href={href}
+                className={`group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
+                  isActive
+                    ? "bg-brand-500 text-white"
+                    : "text-ink-500 hover:bg-muted-50"
+                }`}
+              >
+                <Icon
+                  size={17}
+                  className={
+                    isActive
+                      ? "text-white"
+                      : "text-muted-500 group-hover:text-ink-500"
+                  }
+                />
+                {label}
+
+                {isActive && (
+                  <span className="absolute right-2 top-1/2 h-4 w-1 -translate-y-1/2 rounded-full bg-notify-500" />
+                )}
+              </Link>
+            );
+          })}
         </div>
 
         <div className="mt-auto flex flex-col gap-1 border-t border-border pt-3">
