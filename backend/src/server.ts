@@ -742,8 +742,7 @@ app.post('/api/predictions', authenticate, aiService.getRefillPrediction);
  *   name: chat
  *   description: API for ai chat
  */
-app.post('/api/chat', authenticate, aiService.getChatReply)
-
+app.post('/api/chat', authenticate, aiService.getChatReply);
 // --- Payout Routes ---
 /**
  * @swagger
