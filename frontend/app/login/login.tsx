@@ -84,8 +84,8 @@ export default function Login() {
       {/* HEADER */}
       <header className="auth-header">
 
-        <Link href="/" className="flameiq-logo">
-          <Image src="/images/logo.png" alt="FlameIQ logo" width={140} height={34} />
+        <Link href="/" className="flameintel-logo">
+          <Image src="/images/logo.png" alt="FlameIntel logo" width={140} height={34} />
         </Link>
 
         <div className="auth-header-right">
@@ -123,7 +123,7 @@ export default function Login() {
 
             <p>
               Enter your details to access your
-              FlameIQ account.
+              FlameIntel account.
             </p>
 
           </div>
@@ -271,7 +271,7 @@ export default function Login() {
           {/* CREATE ACCOUNT */}
           <p className="create-account">
 
-            Don&apos;t have a FlameIQ account?{" "}
+            Don&apos;t have a FlameIntel account?{" "}
 
             <Link href="/signup">
               Create Account

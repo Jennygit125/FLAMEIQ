@@ -6,13 +6,11 @@ import Link from "next/link";
 import Image from "next/image";
 import { UserRound, Eye, EyeOff } from "lucide-react";
 import { signup as signupRequest } from "@/services/authService";
-import { useAuth } from "@/context/AuthContext";
 
 import "./signup.css";
 
 export default function SignupPage() {
   const router = useRouter();
-  const { login } = useAuth();
 
   const [form, setForm] = useState({
     fullName: "",
@@ -56,19 +54,17 @@ export default function SignupPage() {
 
     setLoading(true);
     try {
-      const { data } = await signupRequest({
+      await signupRequest({
         name: form.fullName.trim(),
         email: form.email.trim(),
         password: form.password,
       });
 
-      if (data?.user && data?.token) {
-        login(data.user, data.token);
-        const targetRoute = data.user?.role === "VENDOR" ? "/vendor/dashboard" : "/customer/dashboard";
-        router.push(targetRoute);
-      } else {
-        router.push("/login");
-      }
+      // Account created — the backend has emailed a verification code.
+      // Don't log the user in yet; they must verify the code first.
+      router.push(
+        `/verify-code?email=${encodeURIComponent(form.email.trim())}&purpose=signup`
+      );
     } catch (err: any) {
       const message = err?.response?.data?.message || "Sign up failed. Please check your details and try again.";
       setError(message);
