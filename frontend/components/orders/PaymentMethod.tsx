@@ -22,9 +22,7 @@ export default function PaymentMethod() {
       router.push("/customer/orders/payment");
       return;
     }
-    // Bank transfer has no dedicated screen yet — kept as a UI-only stub
-    // until that flow is designed.
-    setTimeout(() => setLoading(false), 800);
+    router.push("/customer/orders/bank-transfer");
   };
 
   return (
