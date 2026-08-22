@@ -11,13 +11,13 @@ import { payoutJob } from './jobs/payoutJob.js';
 import { authenticate, authorizeAdmin, deleteSelf, deleteUsers, flagVendor, forgotPassword, getMe, getTotalProfit, getUsers, resetPassword, signIn, signUp, updateProfile, verifyOtp } from './controllers/authControl.js';
 import { uploadProfilePicture } from './controllers/uploadController.js';
 import { encryptionController } from './controllers/encryptionController.js';
-import orderRoutes from './routesF/orderRoutes.js';
-import paymentRoutes from './routesF/paymentRoutes.js';
-import payoutRoutes from './routesF/payoutRoutes.js';
-import cylinderRoutes from './routesF/cylinderRoutes.js';
-import reviewRoutes from './routesF/reviewRoutes.js';
+import orderRoutes from './routes/orderRoutes.js';
+import paymentRoutes from './routes/paymentRoutes.js';
+import payoutRoutes from './routes/payoutRoutes.js';
+import cylinderRoutes from './routes/cylinderRoutes.js';
+import reviewRoutes from './routes/reviewRoutes.js';
 import {aiService} from './services/aiService.js';
-import createRoutesRouter from './routesF/routes.js';
+import createRoutesRouter from './routes/routes.js';
 import ipTracker from './utils/ipTracker.js';
 import httpLogger from './utils/httpLogger.js';
 import { setupSwagger } from './config/swagger.js';
@@ -743,6 +743,7 @@ app.post('/api/predictions', authenticate, aiService.getRefillPrediction);
  *   description: API for ai chat
  */
 app.post('/api/chat', authenticate, aiService.getChatReply)
+
 // --- Payout Routes ---
 /**
  * @swagger
