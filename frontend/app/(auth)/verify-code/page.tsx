@@ -13,7 +13,7 @@ function VerifyCodeContent() {
   const searchParams = useSearchParams();
   const email = searchParams.get("email") ?? "";
 
-  const [code, setCode] = useState(["", "", "", ""]);
+  const [code, setCode] = useState(["", "", "", "", "", ""]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [verified, setVerified] = useState(false);
@@ -36,7 +36,7 @@ function VerifyCodeContent() {
   };
 
   const handleResend = async () => {
-    setCode(["", "", "", ""]);
+    setCode(["", "", "", "", "", ""]);
     setError("");
     try {
       await sendPasswordReset({ email });
