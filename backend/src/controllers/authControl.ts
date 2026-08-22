@@ -12,12 +12,13 @@ import { config } from '../config/index.js';
 import { signupSchema, loginSchema, verifyOtpSchema } from "../validators/authValidators.js";
 
 import { AppError, UnauthorizedError } from "@/utils/errors.js";
+import { Role } from "@/generated/prisma/enums.js";
 
 // Define a type for our JWT payload for better type safety
 interface JwtPayload {
   id: string;
   email: string;
-  role: 'USER' | 'ADMIN'; // Use a specific enum or union type if available
+  role: Role; // Use a specific enum or union type if available'; // Use a specific enum or union type if available
 }
 
 export const authenticate = (req: Request, res: Response, next: NextFunction) => {
