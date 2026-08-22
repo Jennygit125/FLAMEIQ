@@ -4,7 +4,6 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Flame } from "lucide-react";
 
-// 1. Strictly-typed structure aligning with your team's T&C architectural design
 interface PolicySection {
   title: string;
   paragraphs: string[];
@@ -82,7 +81,6 @@ export default function PrivacyPolicyPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
-  // Dynamic role parsing straight out of URL params (?role=customer or ?role=vendor)
   const userRole = searchParams.get("role");
 
   const handleBackNavigation = () => {
@@ -103,7 +101,7 @@ export default function PrivacyPolicyPage() {
 
   return (
     <main className="min-h-screen bg-background text-left">
-      {/* Replicated Official App Header */}
+     
       <header className="flex items-center justify-between bg-brand-900 px-6 py-4 md:px-12">
         <Link href="/" className="flex items-center gap-1.5 text-lg font-bold text-white">
           <Flame size={18} className="text-notify-400" fill="currentColor" />
@@ -121,7 +119,7 @@ export default function PrivacyPolicyPage() {
         </nav>
       </header>
 
-      {/* Main Structural Body Panel matching T&C frame layout perfectly */}
+     
       <div className="mx-auto max-w-3xl px-6 py-10">
         <h1 className="text-3xl font-bold text-ink-500">
           Privacy Policy
@@ -130,7 +128,7 @@ export default function PrivacyPolicyPage() {
           Including Data Protection and Information Security Practices
         </p>
 
-        {/* Content Box using your team's custom border-dashed variables */}
+    
         <div className="mt-6 rounded-lg border border-dashed border-brand-300 bg-brand-50/30 p-6 space-y-6">
           <p className="text-sm leading-relaxed text-ink-500">
             This Privacy Policy explains how [Company legal name] (“FlameIntel”, “we”, “us”) collects, uses, stores, shares, and protects personal data when you use the FlameIntel website and related services (the “Service”). It is written for customers, vendors, and visitors, and reflects our product design, operational needs, and information-security controls.
@@ -155,7 +153,7 @@ export default function PrivacyPolicyPage() {
           ))}
         </div>
 
-        {/* Legal System Identifiers Footer */}
+        
         <div className="mt-8 text-sm text-muted-500">
           <p className="font-semibold text-ink-500">FLAMEINTEL COMPLIANCE CORE</p>
           <p>Web Platform for LPG Ordering and Refill Planning</p>
@@ -163,7 +161,6 @@ export default function PrivacyPolicyPage() {
           <p className="mt-1 text-xs">Last updated: August 2026</p>
         </div>
 
-        {/* Context-Aware Profile Redirection Action Button */}
         <button
           onClick={handleBackNavigation}
           className="mt-6 w-full rounded-lg bg-brand-500 px-5 py-3 text-sm font-semibold text-white hover:bg-brand-hover transition-all"
