@@ -77,7 +77,7 @@ export default function SignupPage() {
     <main className="signup-page">
       <header className="signup-header">
         <Link href="/" className="logo">
-          <Image src="/images/logo.png" alt="FlameIQ logo" width={140} height={34} />
+          <Image src="/images/logo.png" alt="FlameIntel logo" width={140} height={34} />
         </Link>
 
         <div className="login-link">
@@ -88,7 +88,7 @@ export default function SignupPage() {
 
       <section className="signup-section">
         <div className="signup-background">
-          <img src="/images/Heroflamee.png" alt="FlameIQ gas cylinder and mobile application" />
+          <img src="/images/Heroflamee.png" alt="FlameIntel gas cylinder and mobile application" />
         </div>
 
         <div className="signup-form-container">

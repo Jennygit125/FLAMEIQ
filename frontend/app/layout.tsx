@@ -3,8 +3,8 @@ import { AuthProvider } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 
 export const metadata = {
-  title: "FlameIQ",
-  description: "FlameIQ — Local Impact Hackathon 2026",
+  title: "FlameIntel",
+  description: "FlameIntel — Local Impact Hackathon 2026",
 };
 
 export default function RootLayout({

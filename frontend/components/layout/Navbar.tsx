@@ -28,7 +28,7 @@ export default function Navbar({
           <span className="truncate">23 Freedom Way, Lekki Phase 1, Lagos</span>
         </div>
       ) : (
-        <Image src="/images/logo.png" alt="FlameIQ logo" width={110} height={26} className="flex-1" />
+        <Image src="/images/logo.png" alt="FlameIntel logo" width={110} height={26} className="flex-1" />
       )}
 
       <button

@@ -32,7 +32,7 @@ function ResetPasswordContent() {
 
     setLoading(true);
     try {
-      await resetPassword({ email, code, password });
+      await resetPassword({ email, otp: code, newPassword: password });
       setSuccess(true);
     } catch {
       setError("Unable to reset password. Please try again.");

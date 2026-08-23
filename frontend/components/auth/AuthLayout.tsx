@@ -11,7 +11,7 @@ export default function AuthLayout({
       {/* Header */}
       <header className="flex h-[72px] items-center justify-between px-6 sm:px-10 lg:px-16">
         <a href="/" className="flex items-center">
-          <Image src="/images/logo.png" alt="FlameIQ logo" width={160} height={38} />
+          <Image src="/images/logo.png" alt="FlameIntel logo" width={160} height={38} />
         </a>
 
         {/* Login */}

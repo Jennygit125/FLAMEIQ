@@ -75,7 +75,7 @@ export default function LoginPage() {
     <main className="login-page">
       <header className="auth-header">
         <Link href="/" className="flameiq-logo">
-          <Image src="/images/logo.png" alt="FlameIQ logo" width={140} height={34} />
+          <Image src="/images/logo.png" alt="FlameIntel logo" width={140} height={34} />
         </Link>
 
         <div className="auth-header-right">
@@ -95,7 +95,7 @@ export default function LoginPage() {
 
           <div className="login-heading">
             <h1>Welcome Back 👋</h1>
-            <p>Enter your details to access your FlameIQ account.</p>
+            <p>Enter your details to access your FlameIntel account.</p>
           </div>
 
           <form onSubmit={handleSubmit} className="login-form">
@@ -164,7 +164,7 @@ export default function LoginPage() {
           </form>
 
           <p className="create-account">
-            Don&apos;t have a FlameIQ account?{" "}
+            Don&apos;t have a FlameIntel account?{" "}
             <Link href="/signup">Create Account</Link>
           </p>
         </div>
