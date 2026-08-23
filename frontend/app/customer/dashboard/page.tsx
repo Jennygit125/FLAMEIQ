@@ -5,7 +5,7 @@ import QuickActions from "@/components/dashboard/QuickActions";
 import NearbyVendors from "@/components/dashboard/NearbyVendors";
 import MonthOverview from "@/components/dashboard/MonthOverview";
 import PromoBanner from "@/components/dashboard/PromoBanner";
-import { useEffect, useState } from "react";
+//import { useEffect, useState } from "react";
 
 interface User {
   name: string;
