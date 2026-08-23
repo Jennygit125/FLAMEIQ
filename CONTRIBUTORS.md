@@ -44,6 +44,23 @@ Replace `YOUR_GITHUB_USERNAME`, `Your Name`, `YOUR_X_HANDLE`, and the role line.
         <br />
         <sub>Maintainer — FLAMEIQ</sub>
     </div>
+
+
+<div style="display:inline-block;width:130px;vertical-align:top;text-align:center;margin:8px">
+    <a href="https://github.com/RealEnitan">
+        <img src="https://github.com/RealEnitan.png" width="80" style="border-radius:50%" alt="Oluwatoyin Olatimehin" />
+        <br />
+        <sub><b>Oluwatoyin Olatimehin</b></sub>
+    </a>
+    <br />
+    <a href="https://github.com/RealEnitan"><img src="https://img.shields.io/badge/-GitHub-181717?logo=github&logoColor=white&style=flat-square" alt="GitHub" /></a>
+    <a href=" https://x.com/Enitanimi?t=lMdAuxPQfUOTGep36B7UAQ&s=08"><img src="https://img.shields.io/badge/-X-000000?logo=x&logoColor=white&style=flat-square" alt="X" /></a>
+    <br />
+    <sub>Data Analyst / Data Engineer / Frontend Support — FLAMEINTEL</sub>
+
+</div>
+
+
     <!-- Add your <div> above this line -->
 </div>
 <!-- CONTRIBUTORS-END -->
