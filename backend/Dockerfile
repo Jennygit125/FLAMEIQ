@@ -14,7 +14,7 @@ FROM base AS builder
 COPY . .
 # Copy production node_modules and install devDependencies
 COPY --from=deps /app/node_modules ./node_modules
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile --ignore-scripts
 RUN pnpm run prisma:generate
 RUN pnpm run build
 
