@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from  "next/image";
 import {
   Shield,
   Zap,
@@ -19,8 +20,8 @@ export default function WelcomePage() {
   return (
     <main className="min-h-screen bg-white">
       <header className="flex items-center justify-between px-6 py-5 md:px-12">
-        <Link href="/" className="text-2xl font-bold text-brand-500">
-          Flame<span className="text-notify-500">IQ</span>
+        <Link href="Image" className="text-2xl font-bold text-brand-500">
+          <Image src="/images/logo.png" alt="FlameIntel logo" width={140} height={34} />
         </Link>
 
         <div className="flex items-center gap-3">
