@@ -5,13 +5,19 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Mail } from "lucide-react";
 import OtpInput from "@/components/ui/OtpInput";
 import AuthIconBadge from "@/components/ui/AuthIconBadge";
-import { verifyResetCode, sendPasswordReset } from "@/services/authService";
+import {
+  verifyResetCode,
+  verifySignupCode,
+  sendPasswordReset,
+  resendSignupCode,
+} from "@/services/authService";
 import SuccessModal from "@/components/modals/SuccessModal";
 
 function VerifyCodeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email") ?? "";
+  const purpose = searchParams.get("purpose") === "signup" ? "signup" : "reset";
 
   const [code, setCode] = useState(["", "", "", "", "", ""]);
   const [loading, setLoading] = useState(false);
@@ -26,8 +32,20 @@ function VerifyCodeContent() {
     setLoading(true);
     try {
       const joinedCode = code.join("");
-      await verifyResetCode({ email, code: joinedCode });
-      setVerified(true);
+
+      if (purpose === "signup") {
+        await verifySignupCode({ email, code: joinedCode });
+        // Signup verification is the final step — show the success
+        // confirmation, then the user logs in manually from /login.
+        setVerified(true);
+      } else {
+        await verifyResetCode({ email, code: joinedCode });
+        // Password reset still needs a new password set — carry the
+        // verified code forward instead of showing a success screen here.
+        router.push(
+          `/reset-password?email=${encodeURIComponent(email)}&code=${encodeURIComponent(joinedCode)}`
+        );
+      }
     } catch {
       setError("Invalid code. Please check and try again.");
     } finally {
@@ -39,11 +57,21 @@ function VerifyCodeContent() {
     setCode(["", "", "", "", "", ""]);
     setError("");
     try {
-      await sendPasswordReset({ email });
+      if (purpose === "signup") {
+        await resendSignupCode({ email });
+      } else {
+        await sendPasswordReset({ email });
+      }
     } catch {
       setError("Unable to resend code. Please try again.");
     }
   };
+
+  const heading = purpose === "signup" ? "Verify Your Email" : "Enter Code";
+  const subtitle =
+    purpose === "signup"
+      ? "We've sent a verification code to your email to confirm your account."
+      : "We have sent a password reset instruction to you.";
 
   return (
     <div className="w-full max-w-sm">
@@ -52,11 +80,9 @@ function VerifyCodeContent() {
           <Mail size={22} className="text-link-500" />
         </AuthIconBadge>
         <h1 className="font-heading mt-4 text-xl font-bold text-ink-500">
-          Enter Code
+          {heading}
         </h1>
-        <p className="mt-2 text-sm text-muted-500">
-          We have sent a password reset instruction to you.
-        </p>
+        <p className="mt-2 text-sm text-muted-500">{subtitle}</p>
       </div>
 
       <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-4">
@@ -90,12 +116,13 @@ function VerifyCodeContent() {
         </button>
       </form>
 
-
-      <SuccessModal
-        isOpen={verified}
-        message="You're now ready to explore FlameIQ!"
-        redirectTo="/login"
-      />
+      {purpose === "signup" && (
+        <SuccessModal
+          isOpen={verified}
+          message="Your account has been verified. You're now ready to explore FlameIQ!"
+          redirectTo="/login"
+        />
+      )}
     </div>
   );
 }
