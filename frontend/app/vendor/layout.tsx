@@ -17,6 +17,15 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 
+interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  type: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
 export default function VendorLayout({
   children,
 }: {
@@ -24,8 +33,10 @@ export default function VendorLayout({
 }) {
   const pathname = usePathname();
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const notifRef = useRef<HTMLDivElement>(null);
 
+  // Handle clicking outside to close
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
@@ -35,6 +46,45 @@ export default function VendorLayout({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Fetch past notifications & connect to SSE
+  useEffect(() => {
+    const token = localStorage.getItem("flameiq_token");
+    if (!token) return;
+
+    // Fetch past notifications
+    fetch("http://localhost:5000/api/notifications", {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.data) {
+          setNotifications(data.data);
+        }
+      })
+      .catch(err => console.error("Failed to fetch notifications:", err));
+
+    // Connect to SSE stream (we pass token via query param as implemented in backend)
+    const evtSource = new EventSource(`http://localhost:5000/api/notifications/stream?token=${token}`);
+    
+    evtSource.onmessage = (event) => {
+      try {
+        const newNotif = JSON.parse(event.data);
+        // Prepend new real-time notification
+        setNotifications(prev => [newNotif, ...prev]);
+      } catch (err) {
+        console.error("Failed to parse SSE notification:", err);
+      }
+    };
+
+    return () => {
+      evtSource.close();
+    };
+  }, []);
+
+  const unreadCount = notifications.filter(n => !n.isRead).length;
 
   const navItems = [
     { path: "/vendor/dashboard", label: "Dashboard", icon: Home },
@@ -119,6 +169,9 @@ export default function VendorLayout({
                 className={`w-9 h-9 rounded-full border border-slate-200 flex items-center justify-center transition-colors relative ${isNotificationsOpen ? 'bg-slate-100 text-blue-600 border-blue-200' : 'text-slate-500 hover:bg-slate-50'}`}
               >
                 <Bell size={16} />
+                {unreadCount > 0 && (
+                  <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full"></span>
+                )}
               </button>
 
               {/* Dropdown Menu */}
@@ -126,17 +179,44 @@ export default function VendorLayout({
                 <div className="absolute right-0 mt-2 w-80 bg-white border border-slate-200 rounded-xl shadow-lg shadow-slate-200/50 z-50 overflow-hidden flex flex-col">
                   <div className="p-4 border-b border-slate-100 flex justify-between items-center">
                     <h3 className="font-bold text-slate-800 text-sm">Notifications</h3>
-                    <button className="text-xs text-blue-600 font-medium hover:underline">Mark all as read</button>
+                    {unreadCount > 0 && (
+                      <button className="text-xs text-blue-600 font-medium hover:underline">Mark all as read</button>
+                    )}
                   </div>
                   
-                  {/* Empty State */}
-                  <div className="p-8 flex flex-col items-center justify-center text-center">
-                    <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 mb-3">
-                      <Bell size={24} />
+                  {notifications.length === 0 ? (
+                    /* Empty State */
+                    <div className="p-8 flex flex-col items-center justify-center text-center">
+                      <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 mb-3">
+                        <Bell size={24} />
+                      </div>
+                      <p className="font-medium text-slate-800 text-sm mb-1">No new notifications</p>
+                      <p className="text-xs text-slate-500">You're all caught up! Check back later for updates on your refill orders.</p>
                     </div>
-                    <p className="font-medium text-slate-800 text-sm mb-1">No new notifications</p>
-                    <p className="text-xs text-slate-500">You're all caught up! Check back later for updates on your refill orders.</p>
-                  </div>
+                  ) : (
+                    /* Notifications List */
+                    <div className="max-h-80 overflow-y-auto">
+                      {notifications.map((notif, index) => (
+                        <div key={notif.id || index} className={`p-4 border-b border-slate-50 flex gap-3 hover:bg-slate-50 transition-colors ${!notif.isRead ? 'bg-blue-50/30' : ''}`}>
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1 ${
+                            notif.type === 'success' ? 'bg-green-100 text-green-600' :
+                            notif.type === 'warning' ? 'bg-yellow-100 text-yellow-600' :
+                            notif.type === 'error' ? 'bg-red-100 text-red-600' :
+                            'bg-blue-100 text-blue-600'
+                          }`}>
+                            <Bell size={14} />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-sm text-slate-800">{notif.title}</p>
+                            <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">{notif.message}</p>
+                            <p className="text-[10px] text-slate-400 mt-1 font-medium">
+                              {notif.createdAt ? new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   
                   {/* View all button */}
                   <div className="p-3 border-t border-slate-100 bg-slate-50/50">

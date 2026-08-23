@@ -21,13 +21,16 @@ interface JwtPayload {
 }
 
 export const authenticate = (req: Request, res: Response, next: NextFunction) => {
-  const header = req.headers.authorization;
+  let token: string | undefined;
 
-  if (!header?.startsWith("Bearer ")) {
-    return next(new UnauthorizedError("Authentication required. No token provided or token is malformed."));
+  const header = req.headers.authorization;
+  if (header?.startsWith("Bearer ")) {
+    token = header.split(' ')[1];
+  } else if (req.query.token && typeof req.query.token === 'string') {
+    // Support token via query param for EventSource / WebSockets
+    token = req.query.token;
   }
 
-  const token = header.split(' ')[1];
   if (!token) {
     return next(new UnauthorizedError("Authentication required. No token provided."));
   }
