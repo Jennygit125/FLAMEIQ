@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Flame,
   MapPin,
@@ -42,7 +42,7 @@ interface TimelineStep {
 type SortOption = "date-desc" | "date-asc" | "amount-desc" | "amount-asc";
 
 // Sample Data
-const mockOrders: Order[] = [
+const fallbackOrders: Order[] = [
   {
     id: "#FLQ-78391",
     date: "May 18, 2026 . 10:15 AM",
@@ -145,7 +145,24 @@ const timelineSteps: TimelineStep[] = [
 
 export default function OrderRefill() {
   const [activeTab, setActiveTab] = useState<string>("All Orders");
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(mockOrders[0]);
+  useEffect(() => {
+    const loadOrders = async () => {
+      try {
+        const response = await api.get("/orders");
+        const fetchedData = response.data?.data;
+
+        if (Array.isArray(fetchedData) && fetchedData.length > 0) {
+          const loadedOrders = fetchedData.map(maporders);
+          setOrders(loadedOrders);
+        }
+      } catch (error) {
+        console.error("Failed to load Orders for user, using fallbacks:", error);
+      }
+    };
+
+    loadOrders();
+  }, []);
+
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [sortBy, setSortBy] = useState<SortOption>("date-desc");
 
@@ -161,7 +178,7 @@ export default function OrderRefill() {
   };
 
   // Filter & Search Logic
-  const filteredOrders = mockOrders.filter((order) => {
+  const filteredOrders = Orders.filter((order) => {
     const matchesTab =
       activeTab === "All Orders" ||
       (activeTab === "Completed" && order.status === "Delivered") ||
