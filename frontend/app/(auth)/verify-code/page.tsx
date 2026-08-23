@@ -6,12 +6,13 @@ import { Mail } from "lucide-react";
 import OtpInput from "@/components/ui/OtpInput";
 import AuthIconBadge from "@/components/ui/AuthIconBadge";
 import {
-  verifyResetCode,
   verifySignupCode,
   sendPasswordReset,
   resendSignupCode,
 } from "@/services/authService";
 import SuccessModal from "@/components/modals/SuccessModal";
+
+const OTP_LENGTH = 6;
 
 function VerifyCodeContent() {
   const router = useRouter();
@@ -19,7 +20,7 @@ function VerifyCodeContent() {
   const email = searchParams.get("email") ?? "";
   const purpose = searchParams.get("purpose") === "signup" ? "signup" : "reset";
 
-  const [code, setCode] = useState(["", "", "", "", "", ""]);
+  const [code, setCode] = useState<string[]>(Array(OTP_LENGTH).fill(""));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [verified, setVerified] = useState(false);
@@ -34,14 +35,15 @@ function VerifyCodeContent() {
       const joinedCode = code.join("");
 
       if (purpose === "signup") {
-        await verifySignupCode({ email, code: joinedCode });
+        await verifySignupCode({ email, otp: joinedCode });
         // Signup verification is the final step — show the success
         // confirmation, then the user logs in manually from /login.
         setVerified(true);
       } else {
-        await verifyResetCode({ email, code: joinedCode });
-        // Password reset still needs a new password set — carry the
-        // verified code forward instead of showing a success screen here.
+        // The backend has no separate reset-code verification endpoint —
+        // it's checked together with the new password in one call. So
+        // here we only confirm the code is complete, then carry it
+        // forward to /reset-password where the real check happens.
         router.push(
           `/reset-password?email=${encodeURIComponent(email)}&code=${encodeURIComponent(joinedCode)}`
         );
@@ -54,7 +56,7 @@ function VerifyCodeContent() {
   };
 
   const handleResend = async () => {
-    setCode(["", "", "", "", "", ""]);
+    setCode(Array(OTP_LENGTH).fill(""));
     setError("");
     try {
       if (purpose === "signup") {
@@ -63,7 +65,11 @@ function VerifyCodeContent() {
         await sendPasswordReset({ email });
       }   
     } catch {
-      setError("Unable to resend code. Please try again.");
+      setError(
+        purpose === "signup"
+          ? "Resend isn't available yet — please check your inbox, or contact support if the code expired."
+          : "Unable to resend code. Please try again."
+      );
     }
   };
 
@@ -86,7 +92,7 @@ function VerifyCodeContent() {
       </div>
 
       <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-4">
-        <OtpInput value={code} onChange={setCode} />
+        <OtpInput length={OTP_LENGTH} value={code} onChange={setCode} />
 
         {error && (
           <p className="text-center text-xs text-error">{error}</p>
@@ -119,7 +125,7 @@ function VerifyCodeContent() {
       {purpose === "signup" && (
         <SuccessModal
           isOpen={verified}
-          message="Your account has been verified. You're now ready to explore FlameIQ!"
+          message="Your account has been verified. You're now ready to explore FlameIntel!"
           redirectTo="/login"
         />
       )}

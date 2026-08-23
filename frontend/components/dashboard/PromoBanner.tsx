@@ -9,7 +9,7 @@ export default function PromoBanner() {
           Never run out of cooking gas again
         </h2>
         <p className="mt-2 text-xs text-white/80">
-          Let FlameIQ predict, remind and refill on your behalf, on time,
+          Let FlameIntel predict, remind and refill on your behalf, on time,
           every time.
         </p>
         <Link
@@ -23,7 +23,7 @@ export default function PromoBanner() {
       <div className="absolute -right-2 bottom-1 h-44 w-34 opacity-90">
         <Image
           src="/images/load-cylinder.png"
-          alt="FlameIQ gas cylinder"
+          alt="FlameIntel gas cylinder"
           fill          
           className="object-contain"
         />

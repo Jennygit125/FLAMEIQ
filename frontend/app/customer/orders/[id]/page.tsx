@@ -424,7 +424,7 @@ export default function CustomerOrderDetailPage() {
         <div style={{ ...styles.actionCard, borderColor: "#22c55e" }}>
           <h2 style={{ ...styles.cardTitle, color: "#22c55e" }}>🎉 Order Complete!</h2>
           <p style={styles.actionHint}>
-            This order has been successfully completed. Thank you for using FlameIQ!
+            This order has been successfully completed. Thank you for using FlameIntel!
           </p>
           <button onClick={() => router.push("/customer/orders")} style={styles.secondaryBtn}>
             View All Orders

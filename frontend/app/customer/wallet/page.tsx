@@ -110,7 +110,7 @@ export default function CustomerWalletPage() {
             ₦{balance !== null ? balance.toLocaleString("en-NG", { minimumFractionDigits: 2 }) : "0.00"}
           </p>
         )}
-        <p style={styles.balanceSub}>FlameIQ Wallet</p>
+        <p style={styles.balanceSub}>FlameIntel Wallet</p>
       </div>
 
       {/* Top Up Section */}

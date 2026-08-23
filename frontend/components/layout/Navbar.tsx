@@ -28,7 +28,7 @@ export default function Navbar({
           <Image src="/images/logo.png" alt="FlameIQ logo" width={140} height={34} />
         </div>
       ) : (
-        <Image src="/images/logo.png" alt="FlameIQ logo" width={110} height={26} className="flex-1" />
+        <Image src="/images/logo.png" alt="FlameIntel logo" width={110} height={26} className="flex-1" />
       )}
 
       <button
