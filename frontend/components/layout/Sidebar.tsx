@@ -8,8 +8,6 @@ import {
   ShoppingCart,
   Truck,
   Zap,
-  Wallet,
-  Store,
   Settings,
   Package,
   BarChart3,
@@ -19,6 +17,7 @@ import {
   Bot,
   Moon,
   X,
+  HistoryIcon,
 } from "lucide-react";
 import { useTheme} from "@/context/ThemeContext";
 import type { Portal } from "@/types/portal";
@@ -36,7 +35,7 @@ const NAV_ITEMS: Record<Portal, NavItem[]> = {
     { path: "track-delivery", label: "Track Order", icon: Truck },
     { path: "smart-refill", label: "Smart Refill", icon: Zap },
     { path: "ai-assistant", label: "AI Assistant", icon: Bot },
-    { path: "vendor-inquiry", label: "Vendor Inquiry", icon: Store },
+    { path: "orders/history", label: "order history", icon: HistoryIcon },
     { path: "settings", label: "Settings", icon: Settings },
   ],
   vendor: [
