@@ -3,7 +3,6 @@ import {
   LayoutDashboard,
   ShoppingCart,
   Truck,
-  Wallet,
   Settings,
   Package,
   ClipboardList,
@@ -21,7 +20,6 @@ const NAV_ITEMS: Record<Portal, NavItem[]> = {
     { path: "dashboard", label: "Home", icon: LayoutDashboard },
     { path: "orders", label: "Order Gas", icon: ShoppingCart },
     { path: "track-delivery", label: "Track", icon: Truck },
-    { path: "wallet", label: "Wallet", icon: Wallet },
     { path: "settings", label: "Settings", icon: Settings },
   ],
   vendor: [

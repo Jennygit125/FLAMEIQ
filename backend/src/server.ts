@@ -8,7 +8,7 @@ import multer from 'multer';
 import { notificationService } from './services/notificationService.js'
 import { predictionJob } from './jobs/predictionJob.js';
 import { payoutJob } from './jobs/payoutJob.js';
-import { authenticate, authorizeAdmin, deleteSelf, deleteUsers, flagVendor, forgotPassword, getMe, getTotalProfit, getUsers, resetPassword, signIn, signUp, updateProfile, verifyOtp } from './controllers/authControl.js';
+import { authenticate, authorizeAdmin, deleteSelf, deleteUsers, flagVendor, forgotPassword, getMe, getTotalProfit, getUsers, resendOtp, resetPassword, signIn, signUp, updateProfile, verifyOtp } from './controllers/authControl.js';
 import { uploadProfilePicture } from './controllers/uploadController.js';
 import { encryptionController } from './controllers/encryptionController.js';
 import orderRoutes from './routes/orderRoutes.js';
@@ -94,7 +94,7 @@ app.post('/api/auth/signup', authLimiter, signUp)
  */
 app.post('/api/auth/verify-otp', authLimiter, verifyOtp);
 
-
+app.post('/api/auth/resendOtp', authLimiter, resendOtp)
 /**
  * @swagger
  * /api/auth/signin:

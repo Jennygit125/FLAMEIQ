@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Bell, MapPin, Menu } from "lucide-react";
+import { Bell, Menu } from "lucide-react";
 import type { Portal } from "@/types/portal";
 import { ThemeToggle } from "@/components/common/ThemeToggle";
 
@@ -24,8 +24,8 @@ export default function Navbar({
 
       {portal === "customer" ? (
         <div className="flex flex-1 items-center gap-2 text-sm text-ink-500">
-          <MapPin size={16} className="text-brand-500 shrink-0" />
-          <span className="truncate">23 Freedom Way, Lekki Phase 1, Lagos</span>
+          
+          <Image src="/images/logo.png" alt="FlameIQ logo" width={140} height={34} />
         </div>
       ) : (
         <Image src="/images/logo.png" alt="FlameIQ logo" width={110} height={26} className="flex-1" />
