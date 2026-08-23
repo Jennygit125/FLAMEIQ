@@ -129,9 +129,9 @@ export const signUp = async(req: Request, res: Response) => {
 
           await emailService.sendEmail(
             email,
-            "Your FLAMEIQ Verification Code",
-            `Welcome to FLAMEIQ! Your verification code is: ${otp}. It will expire in 10 minutes.`,
-            `<p>Welcome to FLAMEIQ! Your verification code is: <strong>${otp}</strong>. It will expire in 10 minutes.</p>`
+            "Your FlameIntel Verification Code",
+            `Welcome to FlameIntel! Your verification code is: ${otp}. It will expire in 10 minutes.`,
+            `<p>Welcome to FlameIntel! Your verification code is: <strong>${otp}</strong>. It will expire in 10 minutes.</p>`
           );
         } catch (otpErr) {
           logger.warn(`OTP creation or email sending failed: ${otpErr}`);
@@ -173,9 +173,9 @@ export const resendOtp = async (req: Request, res: Response) => {
     });
     await emailService.sendEmail(
       normalizedEmail,
-      "Your FLAMEIQ Verification Code",
-      `Welcome to FLAMEIQ! Your verification code is: ${otp}. It will expire in 10 minutes.`,
-      `<p>Welcome to FLAMEIQ! Your verification code is: <strong>${otp}</strong>. It will expire in 10 minutes.</p>`
+      "Your FlameIntel Verification Code",
+      `Welcome to FlameIntel! Your verification code is: ${otp}. It will expire in 10 minutes.`,
+      `<p>Welcome to FlameIntel! Your verification code is: <strong>${otp}</strong>. It will expire in 10 minutes.</p>`
       );
 
     return res.status(200).json({

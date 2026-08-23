@@ -22,7 +22,7 @@ export default function CustomerDashboardPage({ user }: CustomerDashboardPagePro
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="font-heading text-xl font-bold text-ink-500">
-            Good Morning, {user?.name || "User"}
+            Good Morning, {user?.name || "Sir/Ma"}
           </h1>
           <p className="text-sm text-muted-500">
             Here&apos;s what&apos;s new for you today.
