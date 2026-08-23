@@ -63,7 +63,7 @@ function VerifyCodeContent() {
         await resendSignupCode({ email });
       } else {
         await sendPasswordReset({ email });
-      }
+      }   
     } catch {
       setError(
         purpose === "signup"
