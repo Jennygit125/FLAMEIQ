@@ -11,13 +11,13 @@ import { payoutJob } from './jobs/payoutJob.js';
 import { authenticate, authorizeAdmin, deleteSelf, deleteUsers, flagVendor, forgotPassword, getMe, getTotalProfit, getUsers, resetPassword, signIn, signUp, updateProfile, verifyOtp } from './controllers/authControl.js';
 import { uploadProfilePicture } from './controllers/uploadController.js';
 import { encryptionController } from './controllers/encryptionController.js';
-import orderRoutes from './routesF/orderRoutes.js';
-import paymentRoutes from './routesF/paymentRoutes.js';
-import payoutRoutes from './routesF/payoutRoutes.js';
-import cylinderRoutes from './routesF/cylinderRoutes.js';
-import reviewRoutes from './routesF/reviewRoutes.js';
-//import predictionRoutes from './routes/predictionRoutes.js';
-import createRoutesRouter from './routesF/routes.js';
+import orderRoutes from './routes/orderRoutes.js';
+import paymentRoutes from './routes/paymentRoutes.js';
+import payoutRoutes from './routes/payoutRoutes.js';
+import cylinderRoutes from './routes/cylinderRoutes.js';
+import reviewRoutes from './routes/reviewRoutes.js';
+import {aiService} from './services/aiService.js';
+import createRoutesRouter from './routes/routes.js';
 import ipTracker from './utils/ipTracker.js';
 import httpLogger from './utils/httpLogger.js';
 import { setupSwagger } from './config/swagger.js';
@@ -287,6 +287,20 @@ app.get('/api/users', authenticate, authorizeAdmin, getUsers);
 
 /**
  * @swagger
+ * /api/profit:
+ *   get:
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Total profit.
+ */
+app.get('/api/profit', authenticate, authorizeAdmin, getTotalProfit)
+
+
+/**
+ * @swagger
  * /api/users/{id}:
  *   delete:
  *     summary: Delete a user by ID (Admin only)
@@ -334,7 +348,7 @@ app.delete('/api/users/:id', authenticate, authorizeAdmin, deleteUsers);
  *       404:
  *         description: Vendor not found.
  */
-//app.patch('/api/users/:id/flag', authenticate, authorizeAdmin, flagVendor);
+app.patch('/api/users/:id/flag', authenticate, authorizeAdmin, flagVendor);
 
 /**
  * @swagger
@@ -698,14 +712,12 @@ app.use('/api/reviews', reviewRoutes);
 
 /**
  * @swagger
- * /api/predictions/initial:
+ * /api/predictions:
  *   post:
- *     summary: Generate the first (cold-start) prediction for a user
+ *     summary: Generate the prediction for a user
  *     tags: [Predictions]
  *     description: >
- *       This endpoint is typically called automatically after a user registers their first cylinder
- *       and has provided their household profile information. It generates a "cold-start" prediction
- *       and saves it.
+ *       This endpoint is typically called automatically after a user registers 
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -722,8 +734,15 @@ app.use('/api/reviews', reviewRoutes);
  *       202:
  *         description: Prediction generation has been accepted and is processing in the background.
  */
-//app.use('/api/predictions', predictionRoutes);
-
+app.post('/api/predictions', authenticate, aiService.getRefillPrediction);
+/**
+ * @swagger
+ * /api/chat
+ * tags:
+ *   name: chat
+ *   description: API for ai chat
+ */
+app.post('/api/chat', authenticate, aiService.getChatReply);
 // --- Payout Routes ---
 /**
  * @swagger

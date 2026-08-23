@@ -19,7 +19,7 @@ function VerifyCodeContent() {
   const email = searchParams.get("email") ?? "";
   const purpose = searchParams.get("purpose") === "signup" ? "signup" : "reset";
 
-  const [code, setCode] = useState(["", "", "", ""]);
+  const [code, setCode] = useState(["", "", "", "", "", ""]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [verified, setVerified] = useState(false);
@@ -54,7 +54,7 @@ function VerifyCodeContent() {
   };
 
   const handleResend = async () => {
-    setCode(["", "", "", ""]);
+    setCode(["", "", "", "", "", ""]);
     setError("");
     try {
       if (purpose === "signup") {
@@ -103,7 +103,7 @@ function VerifyCodeContent() {
         <button
           type="submit"
           disabled={!isComplete || loading}
-          className="rounded-lg px-5 py-2.5 text-sm font-semibold bg-[#1f4e79] text-white hover:bg-[#1f4e79] disabled:cursor-not-allowed disabled:opacity-60 w-full"
+          className="rounded-lg px-5 py-2.5 text-sm font-semibold bg-brand-500 text-white hover:bg-brand-500 disabled:cursor-not-allowed disabled:opacity-60 w-full"
         >
           {loading ? "Verifying…" : "Proceed"}
         </button>

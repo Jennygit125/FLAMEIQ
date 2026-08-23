@@ -6,9 +6,9 @@ const options: swaggerJSDoc.Options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'FLAMEIQ API',
+      title: 'FlameIntel API',
       version: '1.0.0',
-      description: 'API Documentation for FLAMEIQ backend and Wallet system',
+      description: 'API Documentation for FlameIntel backend and Wallet system',
     },
     servers: [
       {

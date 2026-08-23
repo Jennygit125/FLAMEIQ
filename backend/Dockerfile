@@ -6,23 +6,22 @@ RUN corepack enable
 # ---- Dependencies ----
 FROM base AS deps
 COPY package.json pnpm-lock.yaml ./
-# Install only production dependencies first
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --frozen-lockfile --ignore-scripts
+# Install all dependencies (postinstall scripts like prisma generate need dev deps)
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 
 # ---- Builder ----
 FROM base AS builder
 COPY . .
-# Copy production node_modules and install devDependencies
+# Copy all node_modules from deps stage
 COPY --from=deps /app/node_modules ./node_modules
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
-RUN pnpm run prisma:generate
 RUN pnpm run build
 
 # ---- Runner ----
 FROM base AS runner
 
-# Copy production dependencies
-COPY --from=deps /app/node_modules ./node_modules
+# Copy production dependencies only
+COPY package.json pnpm-lock.yaml ./
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --frozen-lockfile
 
 # Copy built application
 COPY --from=builder /app/dist ./dist
@@ -34,4 +33,4 @@ ENV NODE_ENV=production
 
 EXPOSE 3000
 
-CMD ["pnpm", "start"]
+CMD ["pnpm", "run", "dev"]

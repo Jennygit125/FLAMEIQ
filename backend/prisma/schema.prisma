@@ -114,26 +114,26 @@ model User {
 }
 
 model Profile {
-  id                String      @id @default(uuid()) // Changed to UUID
-  userId            String      @unique // Changed to String
-  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  profileType       ProfileType @default(USER)
-  businessName      String?
-  phone             String?
-  profilePic        String?
-  address           String?
-  latitude          Float?
-  longitude         Float?
-  isVerified        Boolean     @default(false)
-  flutterwaveCustomerId String? @unique
-  walletBalance     Decimal     @default(0.00) // In-app wallet balance
-  bankCode          String?
-  bankAccountNumber String?
-  flagCount         Int         @default(0)
-  flagReason        String?
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
-  deletedAt         DateTime?
+  id                    String      @id @default(uuid()) // Changed to UUID
+  userId                String      @unique // Changed to String
+  user                  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  profileType           ProfileType @default(USER)
+  businessName          String?
+  phone                 String?
+  profilePic            String?
+  address               String?
+  latitude              Float?
+  longitude             Float?
+  isVerified            Boolean     @default(false)
+  flutterwaveCustomerId String?     @unique
+  walletBalance         Decimal     @default(0.00) // In-app wallet balance
+  bankCode              String?
+  bankAccountNumber     String?
+  flagCount             Int         @default(0)
+  flagReason            String?
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+  deletedAt             DateTime?
 }
 
 // - OTP Verification -

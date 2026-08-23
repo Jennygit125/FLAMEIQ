@@ -12,12 +12,14 @@ import { config } from '../config/index.js';
 import { signupSchema, loginSchema, verifyOtpSchema } from "../validators/authValidators.js";
 
 import { AppError, UnauthorizedError } from "@/utils/errors.js";
+import { Role } from "@/generated/prisma/enums.js";
 
 // Define a type for our JWT payload for better type safety
 interface JwtPayload {
   id: string;
   email: string;
-  role: 'USER' | 'ADMIN'; // Use a specific enum or union type if available
+  name: string;
+  role: Role; // Use a specific enum or union type if available'; // Use a specific enum or union type if available
 }
 
 export const authenticate = (req: Request, res: Response, next: NextFunction) => {
@@ -43,6 +45,7 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
 
     req.user = {
       id: decoded.id,
+      name: decoded.name,
       role: decoded.role,
     };
 
@@ -108,12 +111,6 @@ export const signUp = async(req: Request, res: Response) => {
         email: email.toLowerCase(),
         password: hashedPassword,
       },
-      // Safely return only the fields the frontend needs
-      select: {
-        id: true,
-        name: true,
-        email: true,
-      },
     });
 
         try {
@@ -132,9 +129,9 @@ export const signUp = async(req: Request, res: Response) => {
 
           await emailService.sendEmail(
             email,
-            "Your FLAMEIQ Verification Code",
-            `Welcome to FLAMEIQ! Your verification code is: ${otp}. It will expire in 10 minutes.`,
-            `<p>Welcome to FLAMEIQ! Your verification code is: <strong>${otp}</strong>. It will expire in 10 minutes.</p>`
+            "Your FlameIntel Verification Code",
+            `Welcome to FlameIntel! Your verification code is: ${otp}. It will expire in 10 minutes.`,
+            `<p>Welcome to FlameIntel! Your verification code is: <strong>${otp}</strong>. It will expire in 10 minutes.</p>`
           );
         } catch (otpErr) {
           logger.warn(`OTP creation or email sending failed: ${otpErr}`);
@@ -176,9 +173,9 @@ export const resendOtp = async (req: Request, res: Response) => {
     });
     await emailService.sendEmail(
       normalizedEmail,
-      "Your FLAMEIQ Verification Code",
-      `Welcome to FLAMEIQ! Your verification code is: ${otp}. It will expire in 10 minutes.`,
-      `<p>Welcome to FLAMEIQ! Your verification code is: <strong>${otp}</strong>. It will expire in 10 minutes.</p>`
+      "Your FlameIntel Verification Code",
+      `Welcome to FlameIntel! Your verification code is: ${otp}. It will expire in 10 minutes.`,
+      `<p>Welcome to FlameIntel! Your verification code is: <strong>${otp}</strong>. It will expire in 10 minutes.</p>`
       );
 
     return res.status(200).json({
@@ -235,7 +232,7 @@ export const verifyOtp = async (req: Request, res: Response) => {
         usedAt: new Date(),
       },
     });
-
+    await prisma.profile.update({ where: { userId: user.id }, data: { isVerified: true } });
     // Fetch the user to return with the token
     const fullUser = await prisma.user.findUnique({
       where: { id: user.id, deletedAt: null },
@@ -253,7 +250,7 @@ export const verifyOtp = async (req: Request, res: Response) => {
     }
 
     const payload = {
-      id: fullUser.id, email: fullUser.email, role: fullUser.role,
+      id: fullUser.id, name: fullUser.name, email: fullUser.email, role: fullUser.role,
     };
     const secret = config.jwtSecret;
     const token = jwt.sign(payload, secret, { expiresIn: config.jwtExpiresIn as any });
@@ -287,7 +284,12 @@ export const signIn = async (req: Request, res: Response) =>{
       
       throw new UnauthorizedError("Invalid email or password");
     }
-
+    if(user && user.profile && user.profile.isVerified === true){
+      logger.warn(`Failed login attempt for email ${email} from IP ${req.ip}`);
+      logger.warn(`Failed login attempt for email ${normalizedEmail} from IP ${(req as any).clientIp || req.ip}`);
+      
+      throw new UnauthorizedError("OTP not verified");
+    }
     const clientIp = (req as any).clientIp || req.ip || '0.0.0.0';
     const userAgent = req.headers['user-agent'] || 'unknown';
     await prisma.loginHistory.create({
