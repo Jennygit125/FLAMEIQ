@@ -29,6 +29,6 @@ export const logoutUser = (): void => {
 
     document.cookie = `${TOKEN_KEY}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; Secure`;
 
-    window.location.href = "/login";
+    window.location.href = "/";
   }
 };

@@ -2,6 +2,19 @@
 
 import { useEffect, useRef, useState } from "react";
 import { getOrders, acceptOrder, rejectOrder, setOrderOnRoute, setOrderDelivered } from "@/services/ordersService";
+import {
+  ClipboardList,
+  Clock,
+  Truck,
+  CheckCircle2,
+  Search,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  MapPin,
+  X,
+  Image as ImageIcon
+} from "lucide-react";
 
 type OrderStatus = "PAYMENT_PENDING" | "PENDING" | "ACCEPTED" | "ON_ROUTE" | "DELIVERED" | "CONFIRMED" | "REJECTED" | "CANCELLED";
 
@@ -15,35 +28,36 @@ interface Order {
   user: { name: string; profile?: { phone?: string; address?: string } };
 }
 
-const STATUS_COLORS: Record<OrderStatus, string> = {
-  PAYMENT_PENDING: "#6b7280",
-  PENDING: "#f59e0b",
-  ACCEPTED: "#8b5cf6",
-  ON_ROUTE: "#06b6d4",
-  DELIVERED: "#10b981",
-  CONFIRMED: "#22c55e",
-  REJECTED: "#ef4444",
-  CANCELLED: "#6b7280",
+// Map backend statuses to simple UI categories
+const getUIGroup = (status: OrderStatus) => {
+  if (status === "PENDING") return "Pending";
+  if (["ACCEPTED", "ON_ROUTE", "DELIVERED"].includes(status)) return "Active";
+  if (status === "CONFIRMED") return "Completed";
+  return "Other";
 };
 
-const STATUS_LABELS: Record<OrderStatus, string> = {
-  PAYMENT_PENDING: "Awaiting Payment",
-  PENDING: "Needs Action",
-  ACCEPTED: "Accepted",
-  ON_ROUTE: "On Route",
-  DELIVERED: "Delivered",
-  CONFIRMED: "Completed",
-  REJECTED: "Rejected",
-  CANCELLED: "Cancelled",
+// UI mappings for list badges
+const getStatusBadge = (status: OrderStatus) => {
+  switch (status) {
+    case "PAYMENT_PENDING": return { label: "Awaiting Payment", bg: "bg-slate-100", text: "text-slate-600", icon: Clock };
+    case "PENDING": return { label: "Pending", bg: "bg-orange-50", text: "text-orange-500", icon: Clock };
+    case "ACCEPTED": return { label: "Accepted", bg: "bg-yellow-50", text: "text-yellow-600", icon: CheckCircle2 };
+    case "ON_ROUTE": return { label: "On Route", bg: "bg-yellow-50", text: "text-yellow-600", icon: Truck };
+    case "DELIVERED": return { label: "Delivered", bg: "bg-blue-50", text: "text-blue-500", icon: CheckCircle2 };
+    case "CONFIRMED": return { label: "Completed", bg: "bg-green-50", text: "text-green-600", icon: CheckCircle2 };
+    case "REJECTED": return { label: "Rejected", bg: "bg-red-50", text: "text-red-600", icon: X };
+    case "CANCELLED": return { label: "Cancelled", bg: "bg-slate-100", text: "text-slate-500", icon: X };
+    default: return { label: status, bg: "bg-slate-100", text: "text-slate-600", icon: Clock };
+  }
 };
-
-const ACTIVE_FILTERS: OrderStatus[] = ["PENDING", "ACCEPTED", "ON_ROUTE", "DELIVERED"];
 
 export default function VendorOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"active" | "all">("active");
+  const [search, setSearch] = useState("");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  
+  // Modal states
   const [actionLoading, setActionLoading] = useState(false);
   const [showAcceptModal, setShowAcceptModal] = useState(false);
   const [beforeFile, setBeforeFile] = useState<File | null>(null);
@@ -64,7 +78,16 @@ export default function VendorOrdersPage() {
     setLoading(true);
     try {
       const res = await getOrders();
-      setOrders(res.data.data);
+      const fetchedOrders = res.data.data;
+      setOrders(fetchedOrders);
+      // Update selected order if it exists, otherwise select the first order
+      if (selectedOrder) {
+        const updatedSelected = fetchedOrders.find((o: Order) => o.id === selectedOrder.id);
+        if (updatedSelected) setSelectedOrder(updatedSelected);
+        else setSelectedOrder(fetchedOrders[0] || null);
+      } else if (fetchedOrders.length > 0) {
+        setSelectedOrder(fetchedOrders[0]);
+      }
     } catch {
       showToast("Failed to load orders.", "error");
     } finally {
@@ -143,217 +166,444 @@ export default function VendorOrdersPage() {
     }
   };
 
-  const displayedOrders = filter === "active"
-    ? orders.filter((o) => ACTIVE_FILTERS.includes(o.status))
-    : orders;
+  const pendingCount = orders.filter((o) => getUIGroup(o.status) === "Pending").length;
+  const activeCount = orders.filter((o) => getUIGroup(o.status) === "Active").length;
+  const completedCount = orders.filter((o) => getUIGroup(o.status) === "Completed").length;
 
-  const pendingCount = orders.filter((o) => o.status === "PENDING").length;
+  const filteredOrders = orders.filter((o) => 
+    o.id.toLowerCase().includes(search.toLowerCase()) || 
+    o.user.name.toLowerCase().includes(search.toLowerCase()) ||
+    o.user.profile?.address?.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
-    <div style={styles.page}>
-      {/* Toast */}
+    <div className="flex flex-col md:flex-row h-full min-h-[calc(100vh-64px)] w-full bg-[#f9fafb] text-slate-900 font-sans">
+      {/* Toast Notification */}
       {toast && (
-        <div style={{ ...styles.toast, background: toast.type === "success" ? "#22c55e" : "#ef4444" }}>
-          {toast.type === "success" ? "✅" : "❌"} {toast.msg}
+        <div className={`fixed top-6 left-1/2 -translate-x-1/2 px-4 py-2 rounded-lg shadow-lg z-50 text-white font-medium text-sm flex items-center gap-2 ${toast.type === "success" ? "bg-green-500" : "bg-red-500"}`}>
+          {toast.type === "success" ? <CheckCircle2 size={18} /> : <X size={18} />}
+          {toast.msg}
         </div>
       )}
 
-      {/* Header */}
-      <div style={styles.header}>
-        <div>
-          <h1 style={styles.title}>Orders</h1>
-          {pendingCount > 0 && (
-            <p style={styles.subtitle}>{pendingCount} order{pendingCount !== 1 ? "s" : ""} need your action</p>
-          )}
+      {/* Main Content Area */}
+      <div className="flex-1 overflow-y-auto p-4 md:p-8">
+        <div className="mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-800 tracking-tight">Refill Orders</h1>
+          <p className="text-sm text-slate-500 mt-1">Manage and process customers' refill request.</p>
         </div>
-        <div style={styles.filterRow}>
-          {(["active", "all"] as const).map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              style={{
-                ...styles.filterBtn,
-                background: filter === f ? "#f97316" : "#1e293b",
-                color: filter === f ? "#fff" : "#9ca3af",
-              }}
-            >
-              {f === "active" ? "Active" : "All"}
-            </button>
-          ))}
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {/* All Orders */}
+          <div className="bg-white rounded-xl border border-slate-200 p-4 md:p-5 flex flex-col justify-between shadow-sm">
+            <div className="flex justify-between items-start mb-4">
+              <div className="bg-slate-100 p-2.5 rounded-full">
+                <ClipboardList size={20} className="text-slate-600" />
+              </div>
+              <div className="text-right">
+                <p className="text-xs font-semibold text-slate-500 mb-0.5">All Orders</p>
+                <p className="text-2xl font-bold text-slate-800 leading-none">{orders.length}</p>
+              </div>
+            </div>
+            <button className="text-xs font-medium text-blue-600 text-left hover:underline">View all</button>
+          </div>
+
+          {/* Pending */}
+          <div className="bg-white rounded-xl border border-orange-100 p-4 md:p-5 flex flex-col justify-between shadow-sm">
+            <div className="flex justify-between items-start mb-4">
+              <div className="bg-orange-50 p-2.5 rounded-full">
+                <Clock size={20} className="text-orange-500" />
+              </div>
+              <div className="text-right">
+                <p className="text-xs font-semibold text-slate-800 mb-0.5">Pending</p>
+                <p className="text-2xl font-bold text-slate-800 leading-none">{pendingCount}</p>
+              </div>
+            </div>
+            <button className="text-xs font-medium text-orange-500 text-left hover:underline">View orders</button>
+          </div>
+
+          {/* Active */}
+          <div className="bg-white rounded-xl border border-yellow-100 p-4 md:p-5 flex flex-col justify-between shadow-sm">
+            <div className="flex justify-between items-start mb-4">
+              <div className="bg-yellow-50 p-2.5 rounded-full">
+                <Truck size={20} className="text-yellow-500" />
+              </div>
+              <div className="text-right">
+                <p className="text-xs font-semibold text-slate-800 mb-0.5">Active</p>
+                <p className="text-2xl font-bold text-slate-800 leading-none">{activeCount}</p>
+              </div>
+            </div>
+            <button className="text-xs font-medium text-yellow-500 text-left hover:underline">View orders</button>
+          </div>
+
+          {/* Completed */}
+          <div className="bg-white rounded-xl border border-green-100 p-4 md:p-5 flex flex-col justify-between shadow-sm">
+            <div className="flex justify-between items-start mb-4">
+              <div className="bg-green-50 p-2.5 rounded-full">
+                <CheckCircle2 size={20} className="text-green-500" />
+              </div>
+              <div className="text-right">
+                <p className="text-xs font-semibold text-slate-800 mb-0.5">Completed</p>
+                <p className="text-2xl font-bold text-slate-800 leading-none">{completedCount}</p>
+              </div>
+            </div>
+            <button className="text-xs font-medium text-green-500 text-left hover:underline">View orders</button>
+          </div>
+        </div>
+
+        {/* Search & Sort */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
+          <div className="relative w-full sm:max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <input 
+              type="text" 
+              placeholder="Search by name, order ID or Location" 
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all shadow-sm bg-white"
+            />
+          </div>
+          <button className="flex items-center gap-2 px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-medium bg-white hover:bg-slate-50 transition-colors shadow-sm whitespace-nowrap">
+            Sort by <ChevronDown size={16} className="text-slate-500" />
+          </button>
+        </div>
+
+        {/* Orders List */}
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden mb-6">
+          {/* Header Row */}
+          <div className="grid grid-cols-5 md:grid-cols-6 gap-4 p-4 border-b border-slate-100 text-xs font-bold text-slate-500 uppercase tracking-wider bg-slate-50/50">
+            <div className="col-span-1">Order ID</div>
+            <div className="col-span-2">Details</div>
+            <div className="col-span-1 hidden md:block">Amount</div>
+            <div className="col-span-1 text-center">Status</div>
+            <div className="col-span-1 text-right">Action</div>
+          </div>
+
+          {/* List Body */}
+          <div className="divide-y divide-slate-100">
+            {loading ? (
+              <div className="p-12 text-center text-slate-500 flex flex-col items-center justify-center">
+                <div className="w-8 h-8 border-3 border-slate-200 border-t-blue-600 rounded-full animate-spin mb-4"></div>
+                Loading orders...
+              </div>
+            ) : filteredOrders.length === 0 ? (
+              <div className="p-12 text-center text-slate-500">
+                No orders found.
+              </div>
+            ) : (
+              filteredOrders.map(order => {
+                const badge = getStatusBadge(order.status);
+                const isSelected = selectedOrder?.id === order.id;
+                const dateOptions: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' };
+                const formattedDate = new Date(order.createdAt).toLocaleDateString('en-US', dateOptions);
+
+                return (
+                  <div 
+                    key={order.id} 
+                    className={`grid grid-cols-5 md:grid-cols-6 gap-4 p-4 items-center transition-colors hover:bg-slate-50 cursor-pointer ${isSelected ? 'bg-blue-50/30' : ''}`}
+                    onClick={() => setSelectedOrder(order)}
+                  >
+                    {/* Order ID & Date */}
+                    <div className="col-span-1 flex flex-col">
+                      <span className="font-semibold text-blue-900 text-sm">#FLQ-{order.id.substring(0, 5).toUpperCase()}</span>
+                      <span className="text-[10px] sm:text-xs text-slate-400 mt-1">{formattedDate}</span>
+                    </div>
+
+                    {/* Details */}
+                    <div className="col-span-2 flex items-center gap-3">
+                      <div className="w-10 h-12 bg-blue-100 rounded-lg hidden sm:flex items-center justify-center text-blue-600 shrink-0">
+                        <ImageIcon size={20} />
+                      </div>
+                      <div className="flex flex-col truncate">
+                        <span className="font-semibold text-slate-800 text-sm truncate">
+                          {order.items.length > 0 ? order.items[0].name : "Gas Cylinder"}
+                        </span>
+                        <span className="text-xs text-slate-500 mt-0.5 truncate">{order.items.length} Cylinder</span>
+                        <div className="flex items-center gap-1 mt-1 text-[11px] text-slate-400 truncate">
+                          <MapPin size={10} className="shrink-0" />
+                          <span className="truncate">{order.user.profile?.address || "No address provided"}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Amount */}
+                    <div className="col-span-1 hidden md:flex flex-col">
+                      <span className="font-bold text-slate-800 text-sm">₦ {Number(order.totalAmount).toLocaleString()}</span>
+                      <span className="text-[11px] text-slate-400 mt-1">{order.status === 'PAYMENT_PENDING' ? 'Awaiting Payment' : 'Paid'}</span>
+                    </div>
+
+                    {/* Status */}
+                    <div className="col-span-1 flex justify-center">
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${badge.bg} ${badge.text}`}>
+                        <badge.icon size={12} strokeWidth={3} />
+                        {badge.label}
+                      </span>
+                    </div>
+
+                    {/* Action */}
+                    <div className="col-span-1 flex justify-end">
+                      {order.status === "PENDING" ? (
+                        <button 
+                          className="text-xs font-semibold text-blue-700 bg-white border border-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors whitespace-nowrap"
+                          onClick={(e) => { e.stopPropagation(); setSelectedOrder(order); setShowAcceptModal(true); }}
+                        >
+                          Accept Order
+                        </button>
+                      ) : (
+                        <button 
+                          className="text-xs font-semibold text-slate-600 bg-white border border-slate-300 px-3 py-1.5 rounded-lg hover:bg-slate-50 transition-colors whitespace-nowrap"
+                          onClick={(e) => { e.stopPropagation(); setSelectedOrder(order); }}
+                        >
+                          View Details
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {/* Pagination */}
+        <div className="flex items-center justify-between text-sm text-slate-500 pb-8 md:pb-0">
+          <span>Showing 1 to {filteredOrders.length} of {orders.length} orders</span>
+          <div className="flex items-center gap-2">
+            <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-50"><ChevronLeft size={16} /></button>
+            <button className="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-500 text-white font-medium">1</button>
+            <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 hover:bg-slate-50 font-medium">2</button>
+            <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 hover:bg-slate-50 font-medium">3</button>
+            <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 hover:bg-slate-50"><ChevronRight size={16} /></button>
+          </div>
         </div>
       </div>
 
-      {/* Orders List */}
-      {loading ? (
-        <div style={styles.centerWrap}>
-          <div style={styles.spinner} />
+      {/* Right Sidebar - Delivery Details */}
+      <div className="w-full md:w-80 lg:w-[380px] bg-white border-l border-slate-200 flex flex-col shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.05)] z-10 sticky top-0 h-[calc(100vh-64px)] hidden md:flex">
+        <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+          <h2 className="text-lg font-bold text-slate-800">Delivery Details</h2>
+          <button onClick={() => setSelectedOrder(null)} className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-lg md:hidden">
+            <X size={18} />
+          </button>
         </div>
-      ) : displayedOrders.length === 0 ? (
-        <div style={styles.emptyWrap}>
-          <p style={styles.emptyIcon}>📋</p>
-          <p style={styles.emptyText}>No {filter === "active" ? "active " : ""}orders found.</p>
-        </div>
-      ) : (
-        <div style={styles.list}>
-          {displayedOrders.map((order) => (
-            <div key={order.id} style={styles.orderCard}>
-              {/* Card Header */}
-              <div style={styles.cardHeader}>
-                <div>
-                  <p style={styles.orderId}>#{order.id.substring(0, 8).toUpperCase()}</p>
-                  <p style={styles.orderMeta}>
-                    {order.type} • {new Date(order.createdAt).toLocaleDateString("en-NG")}
-                  </p>
+        
+        <div className="flex-1 overflow-y-auto p-6">
+          {selectedOrder ? (
+            <>
+            {/* Header Badge */}
+            {(() => {
+              const badge = getStatusBadge(selectedOrder.status);
+              return (
+                <div className="mb-4">
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${badge.bg} ${badge.text} mb-3`}>
+                    <badge.icon size={12} strokeWidth={3} />
+                    {badge.label}
+                  </span>
+                  <h3 className="text-xl font-bold text-blue-900 mb-1">#FLQ-{selectedOrder.id.substring(0, 5).toUpperCase()}</h3>
+                  <p className="text-xs text-slate-500">{new Date(selectedOrder.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
                 </div>
-                <span style={{ ...styles.statusPill, background: STATUS_COLORS[order.status] + "22", color: STATUS_COLORS[order.status], border: `1px solid ${STATUS_COLORS[order.status]}` }}>
-                  {STATUS_LABELS[order.status]}
-                </span>
-              </div>
+              );
+            })()}
 
-              {/* Buyer Info */}
-              <div style={styles.buyerRow}>
-                <div style={styles.buyerAvatar}>{order.user.name[0].toUpperCase()}</div>
-                <div>
-                  <p style={styles.buyerName}>{order.user.name}</p>
-                  {order.user.profile?.address && (
-                    <p style={styles.buyerAddr}>📍 {order.user.profile.address}</p>
-                  )}
+            {/* Customer Info Card */}
+            <div className="bg-white border border-slate-200 rounded-xl p-4 flex items-center gap-4 mb-6 shadow-sm">
+              <div className="w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center overflow-hidden shrink-0">
+                {selectedOrder.user.name ? (
+                  <span className="text-lg font-bold text-slate-500">{selectedOrder.user.name[0].toUpperCase()}</span>
+                ) : (
+                  <ImageIcon size={20} className="text-slate-400" />
+                )}
+              </div>
+              <div className="flex flex-col flex-1 min-w-0">
+                <span className="font-bold text-slate-800 text-sm truncate">{selectedOrder.user.name}</span>
+                <div className="flex items-start gap-1 mt-1 text-[11px] text-slate-500">
+                  <MapPin size={12} className="shrink-0 mt-0.5 text-teal-500" />
+                  <span className="leading-tight">{selectedOrder.user.profile?.address || "Address not provided"}</span>
                 </div>
-              </div>
-
-              {/* Items Summary */}
-              <div style={styles.itemsSummary}>
-                {order.items.slice(0, 2).map((item) => (
-                  <p key={item.id} style={styles.itemLine}>
-                    {item.quantity}× {item.name}
-                  </p>
-                ))}
-                {order.items.length > 2 && (
-                  <p style={styles.itemLine}>+{order.items.length - 2} more</p>
-                )}
-              </div>
-
-              {/* Total */}
-              <div style={styles.cardFooter}>
-                <span style={styles.totalLabel}>Total</span>
-                <span style={styles.totalAmount}>₦{Number(order.totalAmount).toLocaleString()}</span>
-              </div>
-
-              {/* Action Buttons */}
-              <div style={styles.actionRow}>
-                {order.status === "PENDING" && (
-                  <>
-                    <button
-                      onClick={() => { setSelectedOrder(order); setShowAcceptModal(true); }}
-                      disabled={actionLoading}
-                      style={styles.acceptBtn}
-                    >
-                      ✅ Accept
-                    </button>
-                    <button
-                      onClick={() => handleReject(order.id)}
-                      disabled={actionLoading}
-                      style={styles.rejectBtn}
-                    >
-                      ❌ Reject
-                    </button>
-                  </>
-                )}
-                {order.status === "ACCEPTED" && (
-                  <button onClick={() => handleOnRoute(order.id)} disabled={actionLoading} style={styles.primaryBtn}>
-                    🚚 Mark On Route
-                  </button>
-                )}
-                {order.status === "ON_ROUTE" && (
-                  <button onClick={() => handleDelivered(order.id)} disabled={actionLoading} style={styles.primaryBtn}>
-                    📦 Mark Delivered
-                  </button>
-                )}
-                {order.status === "DELIVERED" && (
-                  <p style={styles.waitingText}>⏳ Waiting for buyer to confirm receipt…</p>
-                )}
               </div>
             </div>
-          ))}
+
+            {/* Refill Information */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 mb-6 shadow-sm">
+              <h4 className="font-bold text-slate-800 text-sm mb-4">Refill Information</h4>
+              
+              <div className="flex gap-4 mb-5">
+                <div className="w-16 h-20 bg-blue-50 rounded-lg flex items-center justify-center text-blue-400 shrink-0">
+                   <ImageIcon size={24} />
+                </div>
+                <div className="flex-1 space-y-3 text-xs">
+                  <div className="flex justify-between border-b border-slate-50 pb-2">
+                    <span className="text-slate-500 font-medium">Order ID</span>
+                    <span className="font-semibold text-slate-800">#FLQ-{selectedOrder.id.substring(0, 5).toUpperCase()}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-slate-50 pb-2">
+                    <span className="text-slate-500 font-medium">Quantity</span>
+                    <span className="font-semibold text-slate-800">{selectedOrder.items.length} Cylinder</span>
+                  </div>
+                  <div className="flex justify-between border-b border-slate-50 pb-2">
+                    <span className="text-slate-500 font-medium">Refill Type</span>
+                    <span className="font-semibold text-slate-800">{selectedOrder.type || 'Standard'} Refill</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500 font-medium">Cylinder Size</span>
+                    <span className="font-semibold text-slate-800">{selectedOrder.items.length > 0 ? selectedOrder.items[0].name.split(' ')[0] : 'Unknown'}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Payment Summary */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm mb-6">
+               <h4 className="font-bold text-slate-800 text-sm mb-4">Payment</h4>
+               <div className="space-y-3 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-slate-500 font-medium">Amount</span>
+                    <span className="font-bold text-slate-800">₦ {Number(selectedOrder.totalAmount).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500 font-medium">Payment Method</span>
+                    <span className="font-semibold text-slate-800">Payment Confirms Order</span>
+                  </div>
+               </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col gap-3 mt-auto">
+              {selectedOrder.status === "PENDING" && (
+                <>
+                  <button 
+                    className="w-full bg-[#1e40af] hover:bg-blue-800 text-white font-bold py-3 rounded-xl transition-colors shadow-sm"
+                    onClick={() => setShowAcceptModal(true)}
+                  >
+                    Accept Order
+                  </button>
+                  <button 
+                    className="w-full bg-white hover:bg-red-50 text-red-500 border border-red-500 font-bold py-3 rounded-xl transition-colors shadow-sm"
+                    onClick={() => handleReject(selectedOrder.id)}
+                    disabled={actionLoading}
+                  >
+                    {actionLoading ? "Processing..." : "Reject Order"}
+                  </button>
+                </>
+              )}
+              {selectedOrder.status === "ACCEPTED" && (
+                 <button 
+                    className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-xl transition-colors shadow-sm"
+                    onClick={() => handleOnRoute(selectedOrder.id)}
+                    disabled={actionLoading}
+                  >
+                    {actionLoading ? "Processing..." : "Mark On Route"}
+                  </button>
+              )}
+              {selectedOrder.status === "ON_ROUTE" && (
+                 <button 
+                    className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-xl transition-colors shadow-sm"
+                    onClick={() => handleDelivered(selectedOrder.id)}
+                    disabled={actionLoading}
+                  >
+                    {actionLoading ? "Processing..." : "Mark Delivered"}
+                  </button>
+              )}
+               {selectedOrder.status === "DELIVERED" && (
+                 <p className="text-center text-sm font-medium text-slate-500 italic p-3 bg-slate-50 rounded-xl border border-slate-100">
+                    Waiting for buyer confirmation...
+                 </p>
+              )}
+            </div>
+            </>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full text-slate-400 text-sm">
+              <ClipboardList size={48} className="mb-4 text-slate-200" />
+              <p>Select an order to view details</p>
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       {/* Accept Modal with Image Upload */}
       {showAcceptModal && selectedOrder && (
-        <div style={styles.modalOverlay} onClick={() => setShowAcceptModal(false)}>
-          <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <h2 style={styles.modalTitle}>Accept Order #{selectedOrder.id.substring(0, 8).toUpperCase()}</h2>
-            <p style={styles.modalHint}>
-              Upload proof images of the cylinder before and after filling to confirm your acceptance.
-            </p>
-
-            {/* Before Fill Image */}
-            <div style={styles.uploadSection}>
-              <p style={styles.uploadLabel}>📷 Before Filling</p>
-              <div
-                style={styles.uploadBox}
-                onClick={() => beforeRef.current?.click()}
-              >
-                {beforePreview ? (
-                  <img src={beforePreview} alt="Before" style={styles.previewImg} />
-                ) : (
-                  <div style={styles.uploadPlaceholder}>
-                    <span style={styles.uploadIcon}>📁</span>
-                    <span style={styles.uploadHint}>Tap to upload</span>
-                  </div>
-                )}
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col">
+            <div className="p-6 border-b border-slate-100">
+              <div className="flex justify-between items-center mb-2">
+                <h2 className="text-xl font-bold text-slate-800">Accept Order #FLQ-{selectedOrder.id.substring(0, 5).toUpperCase()}</h2>
+                <button onClick={() => setShowAcceptModal(false)} className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100"><X size={20}/></button>
               </div>
-              <input
-                ref={beforeRef}
-                type="file"
-                accept="image/*"
-                style={{ display: "none" }}
-                onChange={(e) => e.target.files?.[0] && handleFileSelect("before", e.target.files[0])}
-              />
+              <p className="text-sm text-slate-500">Upload proof images of the cylinder before and after filling.</p>
             </div>
 
-            {/* After Fill Image */}
-            <div style={styles.uploadSection}>
-              <p style={styles.uploadLabel}>📷 After Filling</p>
-              <div
-                style={styles.uploadBox}
-                onClick={() => afterRef.current?.click()}
-              >
-                {afterPreview ? (
-                  <img src={afterPreview} alt="After" style={styles.previewImg} />
-                ) : (
-                  <div style={styles.uploadPlaceholder}>
-                    <span style={styles.uploadIcon}>📁</span>
-                    <span style={styles.uploadHint}>Tap to upload</span>
-                  </div>
-                )}
+            <div className="p-6 space-y-6 overflow-y-auto max-h-[60vh]">
+              {/* Before Fill Image */}
+              <div>
+                <p className="text-sm font-bold text-slate-700 mb-2">Before Filling</p>
+                <div
+                  className={`border-2 border-dashed rounded-xl h-32 flex flex-col items-center justify-center cursor-pointer transition-colors overflow-hidden relative group ${beforePreview ? 'border-transparent' : 'border-slate-300 hover:border-blue-500 bg-slate-50 hover:bg-blue-50'}`}
+                  onClick={() => beforeRef.current?.click()}
+                >
+                  {beforePreview ? (
+                    <>
+                      <img src={beforePreview} alt="Before" className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white text-sm font-medium">Change Image</div>
+                    </>
+                  ) : (
+                    <>
+                      <ImageIcon size={28} className="text-slate-400 mb-2" />
+                      <span className="text-sm text-slate-500 font-medium">Tap to upload</span>
+                    </>
+                  )}
+                </div>
+                <input
+                  ref={beforeRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => e.target.files?.[0] && handleFileSelect("before", e.target.files[0])}
+                />
               </div>
-              <input
-                ref={afterRef}
-                type="file"
-                accept="image/*"
-                style={{ display: "none" }}
-                onChange={(e) => e.target.files?.[0] && handleFileSelect("after", e.target.files[0])}
-              />
+
+              {/* After Fill Image */}
+              <div>
+                <p className="text-sm font-bold text-slate-700 mb-2">After Filling</p>
+                <div
+                  className={`border-2 border-dashed rounded-xl h-32 flex flex-col items-center justify-center cursor-pointer transition-colors overflow-hidden relative group ${afterPreview ? 'border-transparent' : 'border-slate-300 hover:border-blue-500 bg-slate-50 hover:bg-blue-50'}`}
+                  onClick={() => afterRef.current?.click()}
+                >
+                  {afterPreview ? (
+                     <>
+                      <img src={afterPreview} alt="After" className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white text-sm font-medium">Change Image</div>
+                    </>
+                  ) : (
+                    <>
+                      <ImageIcon size={28} className="text-slate-400 mb-2" />
+                      <span className="text-sm text-slate-500 font-medium">Tap to upload</span>
+                    </>
+                  )}
+                </div>
+                <input
+                  ref={afterRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => e.target.files?.[0] && handleFileSelect("after", e.target.files[0])}
+                />
+              </div>
             </div>
 
-            <div style={styles.modalActions}>
+            <div className="p-6 bg-slate-50 border-t border-slate-100 flex gap-3">
+               <button
+                onClick={() => setShowAcceptModal(false)}
+                className="flex-1 py-2.5 rounded-xl border border-slate-300 text-slate-600 font-bold bg-white hover:bg-slate-50 transition-colors shadow-sm"
+              >
+                Cancel
+              </button>
               <button
                 onClick={handleAccept}
                 disabled={actionLoading || !beforeFile || !afterFile}
-                style={{
-                  ...styles.primaryBtn,
-                  opacity: !beforeFile || !afterFile ? 0.5 : 1,
-                  cursor: !beforeFile || !afterFile ? "not-allowed" : "pointer",
-                }}
+                className="flex-1 py-2.5 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
               >
-                {actionLoading ? "Accepting…" : "✅ Confirm Accept"}
-              </button>
-              <button
-                onClick={() => setShowAcceptModal(false)}
-                style={styles.cancelModalBtn}
-              >
-                Cancel
+                {actionLoading ? "Accepting…" : "Confirm Accept"}
               </button>
             </div>
           </div>
@@ -362,201 +612,3 @@ export default function VendorOrdersPage() {
     </div>
   );
 }
-
-// ─── Styles ──────────────────────────────────────────────────────────────────
-
-const styles: Record<string, React.CSSProperties> = {
-  page: {
-    minHeight: "100vh",
-    background: "#0f172a",
-    padding: "24px 16px 80px",
-    fontFamily: "'Inter', sans-serif",
-    color: "#f9fafb",
-  },
-  toast: {
-    position: "fixed",
-    top: 20,
-    left: "50%",
-    transform: "translateX(-50%)",
-    padding: "12px 24px",
-    borderRadius: 12,
-    color: "#fff",
-    fontWeight: 600,
-    fontSize: 14,
-    zIndex: 1000,
-    boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
-  },
-  header: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 20,
-    flexWrap: "wrap",
-    gap: 12,
-  },
-  title: { fontSize: 24, fontWeight: 700, margin: 0 },
-  subtitle: { fontSize: 13, color: "#f59e0b", margin: "4px 0 0" },
-  filterRow: { display: "flex", gap: 8 },
-  filterBtn: {
-    padding: "8px 18px",
-    borderRadius: 20,
-    border: "none",
-    cursor: "pointer",
-    fontSize: 13,
-    fontWeight: 600,
-    transition: "all 0.2s",
-  },
-  centerWrap: { display: "flex", justifyContent: "center", padding: 60 },
-  spinner: {
-    width: 36,
-    height: 36,
-    border: "3px solid #374151",
-    borderTop: "3px solid #f97316",
-    borderRadius: "50%",
-    animation: "spin 0.8s linear infinite",
-  },
-  emptyWrap: { textAlign: "center", padding: "60px 0" },
-  emptyIcon: { fontSize: 48, margin: "0 0 12px" },
-  emptyText: { color: "#9ca3af", fontSize: 15 },
-  list: { display: "flex", flexDirection: "column", gap: 14 },
-  orderCard: {
-    background: "#1e293b",
-    borderRadius: 16,
-    padding: 18,
-    border: "1px solid #334155",
-    display: "flex",
-    flexDirection: "column",
-    gap: 12,
-  },
-  cardHeader: { display: "flex", justifyContent: "space-between", alignItems: "flex-start" },
-  orderId: { fontSize: 16, fontWeight: 700, color: "#f9fafb", margin: 0 },
-  orderMeta: { fontSize: 12, color: "#6b7280", margin: "3px 0 0" },
-  statusPill: {
-    padding: "4px 12px",
-    borderRadius: 20,
-    fontSize: 12,
-    fontWeight: 600,
-  },
-  buyerRow: { display: "flex", alignItems: "center", gap: 10 },
-  buyerAvatar: {
-    width: 38,
-    height: 38,
-    borderRadius: "50%",
-    background: "linear-gradient(135deg, #3b82f6, #8b5cf6)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontWeight: 700,
-    fontSize: 16,
-    color: "#fff",
-    flexShrink: 0,
-  },
-  buyerName: { fontSize: 14, fontWeight: 600, color: "#f9fafb", margin: 0 },
-  buyerAddr: { fontSize: 12, color: "#9ca3af", margin: "2px 0 0" },
-  itemsSummary: {
-    background: "#0f172a",
-    borderRadius: 10,
-    padding: "10px 14px",
-    display: "flex",
-    flexDirection: "column",
-    gap: 4,
-  },
-  itemLine: { fontSize: 13, color: "#9ca3af", margin: 0 },
-  cardFooter: { display: "flex", justifyContent: "space-between", alignItems: "center" },
-  totalLabel: { fontSize: 13, color: "#6b7280" },
-  totalAmount: { fontSize: 18, fontWeight: 700, color: "#f97316" },
-  actionRow: { display: "flex", gap: 10, flexWrap: "wrap" },
-  acceptBtn: {
-    flex: 1,
-    padding: "12px 0",
-    borderRadius: 10,
-    background: "linear-gradient(135deg, #22c55e, #16a34a)",
-    border: "none",
-    color: "#fff",
-    fontWeight: 700,
-    fontSize: 14,
-    cursor: "pointer",
-    minWidth: 100,
-  },
-  rejectBtn: {
-    flex: 1,
-    padding: "12px 0",
-    borderRadius: 10,
-    background: "transparent",
-    border: "1px solid #ef4444",
-    color: "#ef4444",
-    fontWeight: 600,
-    fontSize: 14,
-    cursor: "pointer",
-    minWidth: 100,
-  },
-  primaryBtn: {
-    flex: 1,
-    padding: "12px 0",
-    borderRadius: 10,
-    background: "linear-gradient(135deg, #f97316, #ef4444)",
-    border: "none",
-    color: "#fff",
-    fontWeight: 700,
-    fontSize: 14,
-    cursor: "pointer",
-  },
-  waitingText: { fontSize: 13, color: "#9ca3af", margin: 0, fontStyle: "italic" },
-  modalOverlay: {
-    position: "fixed",
-    inset: 0,
-    background: "rgba(0,0,0,0.7)",
-    backdropFilter: "blur(4px)",
-    display: "flex",
-    alignItems: "flex-end",
-    justifyContent: "center",
-    zIndex: 999,
-  },
-  modal: {
-    background: "#1e293b",
-    borderRadius: "24px 24px 0 0",
-    padding: 24,
-    width: "100%",
-    maxWidth: 500,
-    display: "flex",
-    flexDirection: "column",
-    gap: 16,
-    maxHeight: "90vh",
-    overflowY: "auto",
-  },
-  modalTitle: { fontSize: 18, fontWeight: 700, color: "#f9fafb", margin: 0 },
-  modalHint: { fontSize: 13, color: "#9ca3af", lineHeight: 1.6, margin: 0 },
-  uploadSection: { display: "flex", flexDirection: "column", gap: 8 },
-  uploadLabel: { fontSize: 14, fontWeight: 600, color: "#f9fafb", margin: 0 },
-  uploadBox: {
-    border: "2px dashed #334155",
-    borderRadius: 12,
-    height: 160,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    cursor: "pointer",
-    overflow: "hidden",
-    transition: "border-color 0.2s",
-  },
-  uploadPlaceholder: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    gap: 6,
-  },
-  uploadIcon: { fontSize: 32 },
-  uploadHint: { fontSize: 13, color: "#6b7280" },
-  previewImg: { width: "100%", height: "100%", objectFit: "cover" },
-  modalActions: { display: "flex", flexDirection: "column", gap: 10 },
-  cancelModalBtn: {
-    padding: "12px 0",
-    borderRadius: 10,
-    background: "transparent",
-    border: "1px solid #334155",
-    color: "#9ca3af",
-    fontWeight: 600,
-    fontSize: 14,
-    cursor: "pointer",
-  },
-};
