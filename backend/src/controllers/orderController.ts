@@ -66,6 +66,7 @@ export const getOrderById = async (req: Request, res: Response): Promise<Respons
         vendor: { select: { name: true, profile: { select: { businessName: true, phone: true, profilePic: true, address: true } } } },
         user: { select: { name: true, profile: { select: { phone: true, address: true } } } },
         payout: true,
+        cylinder: true,
       },
     });
 

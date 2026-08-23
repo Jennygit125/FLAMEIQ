@@ -128,37 +128,42 @@ export default function VendorDashboardPage() {
 
           <div className="flex flex-col gap-3 mb-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="border border-slate-100 rounded-lg p-3 flex gap-3 items-center hover:bg-slate-50 transition-colors">
-                <div className="w-12 h-14 bg-yellow-50 rounded-lg flex items-center justify-center shrink-0">
-                  {/* Custom Cylinder SVG */}
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="7" y="6" width="10" height="15" rx="3" fill="#EAB308"/>
-                    <rect x="9" y="3" width="6" height="3" fill="#EAB308"/>
-                    <path d="M7 9C7 7.34315 8.34315 6 10 6H14C15.6569 6 17 7.34315 17 9V11H7V9Z" fill="#CA8A04"/>
-                  </svg>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-0.5">
-                    <span className="text-xs font-bold text-slate-800">FLM-1048</span>
-                    <span className="text-xs font-bold text-blue-900">₦125,950</span>
+              <Link href="/vendor/orders/FLQ-78391" key={i} className="block border border-slate-100 rounded-lg p-3 hover:bg-slate-50 transition-colors">
+                <div className="flex gap-3 items-center">
+                  <div className="w-12 h-14 bg-yellow-50 rounded-lg flex items-center justify-center shrink-0">
+                    {/* Custom Cylinder SVG */}
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect x="7" y="6" width="10" height="15" rx="3" fill="#EAB308"/>
+                      <rect x="9" y="3" width="6" height="3" fill="#EAB308"/>
+                      <path d="M7 9C7 7.34315 8.34315 6 10 6H14C15.6569 6 17 7.34315 17 9V11H7V9Z" fill="#CA8A04"/>
+                    </svg>
                   </div>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-semibold text-slate-700 truncate pr-2">John Adewale</span>
-                    <span className="text-[10px] text-slate-400 shrink-0">10:24 AM</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-[10px] text-slate-500">12.5 kg • Full Refill</span>
-                      <div className="flex items-center gap-1 text-[10px] text-slate-400">
-                        <MapPin size={10} /> Lekki 2, Lagos
-                      </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-0.5">
+                      <span className="text-xs font-bold text-slate-800">FLQ-78391</span>
+                      <span className="text-xs font-bold text-blue-900">₦125,950</span>
                     </div>
-                    <button className="bg-[#1e40af] text-white text-[10px] font-bold px-3 py-1.5 rounded-md hover:bg-blue-800 transition-colors shrink-0">
-                      Accept Order
-                    </button>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-semibold text-slate-700 truncate pr-2">Emeka Johnson</span>
+                      <span className="text-[10px] text-slate-400 shrink-0">10:24 AM</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-[10px] text-slate-500">12.5 kg • Full Refill</span>
+                        <div className="flex items-center gap-1 text-[10px] text-slate-400">
+                          <MapPin size={10} /> Adekunle street, Abuja
+                        </div>
+                      </div>
+                      <button 
+                        onClick={(e) => { e.preventDefault(); /* accept logic */ }} 
+                        className="bg-[#1e40af] text-white text-[10px] font-bold px-3 py-1.5 rounded-md hover:bg-blue-800 transition-colors shrink-0 z-10 relative"
+                      >
+                        Accept Order
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
 
@@ -176,61 +181,65 @@ export default function VendorDashboardPage() {
 
           <div className="flex flex-col gap-3">
             {/* Out for delivery */}
-             <div className="border border-slate-100 rounded-lg p-3 flex gap-3 items-center hover:bg-slate-50 transition-colors">
-                <div className="w-12 h-12 rounded-full bg-yellow-50 flex items-center justify-center shrink-0 text-yellow-600">
-                  <Truck size={20} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-0.5">
-                    <span className="text-xs font-bold text-slate-800">FLM-1048</span>
-                    <span className="text-[10px] font-bold bg-green-100 text-green-700 px-2 py-0.5 rounded">Out for delivery</span>
-                  </div>
-                  <div className="text-xs font-semibold text-slate-700 mb-1">John Adewale</div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-[10px] text-slate-500">12.5 kg • Full Refill</span>
-                      <div className="flex items-center gap-1 text-[10px] text-slate-400">
-                        <MapPin size={10} /> Lekki 2, Lagos
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end gap-1">
-                      <span className="text-xs font-bold text-green-600">ETA: 15 min</span>
-                      <button className="w-6 h-6 rounded border border-blue-200 flex items-center justify-center text-blue-500 hover:bg-blue-50">
-                         <MapPin size={12} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
+             <Link href="/vendor/orders/FLQ-78391" className="block border border-slate-100 rounded-lg p-3 hover:bg-slate-50 transition-colors">
+               <div className="flex gap-3 items-center">
+                 <div className="w-12 h-12 rounded-full bg-yellow-50 flex items-center justify-center shrink-0 text-yellow-600">
+                   <Truck size={20} />
+                 </div>
+                 <div className="flex-1 min-w-0">
+                   <div className="flex items-center justify-between mb-0.5">
+                     <span className="text-xs font-bold text-slate-800">FLQ-78391</span>
+                     <span className="text-[10px] font-bold bg-green-100 text-green-700 px-2 py-0.5 rounded">Out for delivery</span>
+                   </div>
+                   <div className="text-xs font-semibold text-slate-700 mb-1">Emeka Johnson</div>
+                   <div className="flex items-center justify-between">
+                     <div className="flex flex-col gap-0.5">
+                       <span className="text-[10px] text-slate-500">12.5 kg • Full Refill</span>
+                       <div className="flex items-center gap-1 text-[10px] text-slate-400">
+                         <MapPin size={10} /> Adekunle street, Abuja
+                       </div>
+                     </div>
+                     <div className="flex flex-col items-end gap-1 z-10 relative">
+                       <span className="text-xs font-bold text-green-600">ETA: 15 min</span>
+                       <button onClick={(e) => e.preventDefault()} className="w-6 h-6 rounded border border-blue-200 flex items-center justify-center text-blue-500 hover:bg-blue-50">
+                          <MapPin size={12} />
+                       </button>
+                     </div>
+                   </div>
+                 </div>
+               </div>
+             </Link>
 
               {/* Preparing */}
               {[1, 2].map((i) => (
-                <div key={i} className="border border-slate-100 rounded-lg p-3 flex gap-3 items-center hover:bg-slate-50 transition-colors">
-                <div className="w-12 h-12 rounded-full bg-yellow-50 flex items-center justify-center shrink-0 text-yellow-600">
-                  <Truck size={20} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-0.5">
-                    <span className="text-xs font-bold text-slate-800">FLM-1043</span>
-                    <span className="text-[10px] font-bold bg-orange-100 text-orange-600 px-2 py-0.5 rounded">Preparing</span>
+                <Link href="/vendor/orders/FLQ-78391" key={i} className="block border border-slate-100 rounded-lg p-3 hover:bg-slate-50 transition-colors">
+                  <div className="flex gap-3 items-center">
+                  <div className="w-12 h-12 rounded-full bg-yellow-50 flex items-center justify-center shrink-0 text-yellow-600">
+                    <Truck size={20} />
                   </div>
-                  <div className="text-xs font-semibold text-slate-700 mb-1">John Mike</div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-[10px] text-slate-500">6 kg • Full Refill</span>
-                      <div className="flex items-center gap-1 text-[10px] text-slate-400">
-                        <MapPin size={10} /> Lekki 2, Lagos
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-0.5">
+                      <span className="text-xs font-bold text-slate-800">FLQ-78391</span>
+                      <span className="text-[10px] font-bold bg-orange-100 text-orange-600 px-2 py-0.5 rounded">Preparing</span>
+                    </div>
+                    <div className="text-xs font-semibold text-slate-700 mb-1">Emeka Johnson</div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-[10px] text-slate-500">6 kg • Full Refill</span>
+                        <div className="flex items-center gap-1 text-[10px] text-slate-400">
+                          <MapPin size={10} /> Adekunle street, Abuja
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-1 z-10 relative">
+                        <span className="text-xs font-bold text-blue-600">ETA: -</span>
+                        <button onClick={(e) => e.preventDefault()} className="w-6 h-6 rounded border border-blue-200 flex items-center justify-center text-blue-500 hover:bg-blue-50">
+                           <MapPin size={12} />
+                        </button>
                       </div>
                     </div>
-                    <div className="flex flex-col items-end gap-1">
-                      <span className="text-xs font-bold text-blue-600">ETA: -</span>
-                      <button className="w-6 h-6 rounded border border-blue-200 flex items-center justify-center text-blue-500 hover:bg-blue-50">
-                         <MapPin size={12} />
-                      </button>
-                    </div>
                   </div>
                 </div>
-              </div>
+              </Link>
               ))}
           </div>
         </div>

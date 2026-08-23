@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { getOrders, acceptOrder, rejectOrder, setOrderOnRoute, setOrderDelivered } from "@/services/ordersService";
 import {
   ClipboardList,
@@ -408,18 +409,14 @@ export default function VendorOrdersPage() {
 
             {/* Customer Info Card */}
             <div className="bg-white border border-slate-200 rounded-xl p-4 flex items-center gap-4 mb-6 shadow-sm">
-              <div className="w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center overflow-hidden shrink-0">
-                {selectedOrder.user.name ? (
-                  <span className="text-lg font-bold text-slate-500">{selectedOrder.user.name[0].toUpperCase()}</span>
-                ) : (
-                  <ImageIcon size={20} className="text-slate-400" />
-                )}
+              <div className="w-14 h-14 rounded-full bg-slate-200 flex items-center justify-center overflow-hidden shrink-0">
+                  <Image src="/profile.png" alt="Profile" width={56} height={56} className="object-cover w-full h-full" />
               </div>
               <div className="flex flex-col flex-1 min-w-0">
-                <span className="font-bold text-slate-800 text-sm truncate">{selectedOrder.user.name}</span>
-                <div className="flex items-start gap-1 mt-1 text-[11px] text-slate-500">
-                  <MapPin size={12} className="shrink-0 mt-0.5 text-teal-500" />
-                  <span className="leading-tight">{selectedOrder.user.profile?.address || "Address not provided"}</span>
+                <span className="font-bold text-slate-800 text-[15px] truncate">{selectedOrder.user.name}</span>
+                <div className="flex items-center gap-1 mt-1 text-[11px] text-slate-500">
+                  <MapPin size={12} className="shrink-0 text-teal-400" />
+                  <span className="leading-tight truncate">{selectedOrder.user.profile?.address || "Address not provided"}</span>
                 </div>
               </div>
             </div>
@@ -428,24 +425,24 @@ export default function VendorOrdersPage() {
             <div className="bg-white border border-slate-200 rounded-xl p-5 mb-6 shadow-sm">
               <h4 className="font-bold text-slate-800 text-sm mb-4">Refill Information</h4>
               
-              <div className="flex gap-4 mb-5">
-                <div className="w-16 h-20 bg-blue-50 rounded-lg flex items-center justify-center text-blue-400 shrink-0">
-                   <ImageIcon size={24} />
+              <div className="flex gap-4 items-center">
+                <div className="w-16 h-28 relative flex items-center justify-center shrink-0">
+                   <Image src="/cylinder.png" alt="Gas Cylinder" fill className="object-contain" />
                 </div>
-                <div className="flex-1 space-y-3 text-xs">
-                  <div className="flex justify-between border-b border-slate-50 pb-2">
+                <div className="flex-1 flex flex-col justify-center gap-4 py-1 text-[11px]">
+                  <div className="flex justify-between items-center">
                     <span className="text-slate-500 font-medium">Order ID</span>
                     <span className="font-semibold text-slate-800">#FLQ-{selectedOrder.id.substring(0, 5).toUpperCase()}</span>
                   </div>
-                  <div className="flex justify-between border-b border-slate-50 pb-2">
+                  <div className="flex justify-between items-center">
                     <span className="text-slate-500 font-medium">Quantity</span>
                     <span className="font-semibold text-slate-800">{selectedOrder.items.length} Cylinder</span>
                   </div>
-                  <div className="flex justify-between border-b border-slate-50 pb-2">
+                  <div className="flex justify-between items-center">
                     <span className="text-slate-500 font-medium">Refill Type</span>
-                    <span className="font-semibold text-slate-800">{selectedOrder.type || 'Standard'} Refill</span>
+                    <span className="font-semibold text-slate-800">{selectedOrder.type || 'Full Refill'}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between items-center">
                     <span className="text-slate-500 font-medium">Cylinder Size</span>
                     <span className="font-semibold text-slate-800">{selectedOrder.items.length > 0 ? selectedOrder.items[0].name.split(' ')[0] : 'Unknown'}</span>
                   </div>
@@ -456,12 +453,12 @@ export default function VendorOrdersPage() {
             {/* Payment Summary */}
             <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm mb-6">
                <h4 className="font-bold text-slate-800 text-sm mb-4">Payment</h4>
-               <div className="space-y-3 text-xs">
-                  <div className="flex justify-between">
+               <div className="flex flex-col gap-4 text-[11px]">
+                  <div className="flex justify-between items-center">
                     <span className="text-slate-500 font-medium">Amount</span>
                     <span className="font-bold text-slate-800">₦ {Number(selectedOrder.totalAmount).toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between items-center">
                     <span className="text-slate-500 font-medium">Payment Method</span>
                     <span className="font-semibold text-slate-800">Payment Confirms Order</span>
                   </div>
@@ -469,17 +466,17 @@ export default function VendorOrdersPage() {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex flex-col gap-3 mt-auto">
+            <div className="flex flex-col gap-3 mt-auto pt-2">
               {selectedOrder.status === "PENDING" && (
                 <>
                   <button 
-                    className="w-full bg-[#1e40af] hover:bg-blue-800 text-white font-bold py-3 rounded-xl transition-colors shadow-sm"
+                    className="w-full bg-[#1e40af] hover:bg-blue-800 text-white font-medium py-2.5 rounded-xl transition-colors shadow-sm text-[13px]"
                     onClick={() => setShowAcceptModal(true)}
                   >
                     Accept Order
                   </button>
                   <button 
-                    className="w-full bg-white hover:bg-red-50 text-red-500 border border-red-500 font-bold py-3 rounded-xl transition-colors shadow-sm"
+                    className="w-full bg-white hover:bg-red-50 text-red-500 border border-red-300 font-medium py-2.5 rounded-xl transition-colors shadow-sm text-[13px]"
                     onClick={() => handleReject(selectedOrder.id)}
                     disabled={actionLoading}
                   >

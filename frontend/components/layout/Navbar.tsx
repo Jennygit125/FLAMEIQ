@@ -119,7 +119,7 @@ export default function Navbar({
         </button>
 
         {isDropdownOpen && (
-          <div className="absolute right-0 mt-2 w-80 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden flex flex-col max-h-[400px]">
+          <div className="absolute -right-2 sm:right-0 mt-2 w-[calc(100vw-32px)] sm:w-80 max-w-sm bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden flex flex-col max-h-[400px]">
             <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
               <h3 className="font-bold text-slate-800 text-sm">Notifications</h3>
               {unreadCount > 0 && (
