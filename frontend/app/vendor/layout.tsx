@@ -13,7 +13,9 @@ import {
   Settings, 
   LogOut,
   Bell,
-  ArrowRight
+  ArrowRight,
+  Menu,
+  X
 } from "lucide-react";
 import Image from "next/image";
 
@@ -32,6 +34,7 @@ export default function VendorLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const notifRef = useRef<HTMLDivElement>(null);
@@ -97,8 +100,50 @@ export default function VendorLayout({
 
   return (
     <div className="flex h-screen w-full bg-[#f9fafb] font-sans text-slate-900 overflow-hidden">
-      {/* Left Sidebar */}
-      <aside className="w-64 bg-white border-r border-slate-200 flex flex-col h-full shrink-0">
+      {/* Mobile Sidebar Overlay */}
+      {isMobileMenuOpen && (
+        <div className="fixed inset-0 z-50 flex md:hidden">
+          <div className="fixed inset-0 bg-slate-900/50" onClick={() => setIsMobileMenuOpen(false)} />
+          <aside className="w-64 bg-white border-r border-slate-200 flex flex-col h-full shrink-0 relative z-10 shadow-2xl transition-transform">
+            <div className="h-16 flex items-center justify-between px-6 border-b border-transparent shrink-0 mt-2">
+              <Image src="/images/logo.png" alt="FlameIntel" width={140} height={32} className="h-7 w-auto object-contain" />
+              <button onClick={() => setIsMobileMenuOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <X size={20} />
+              </button>
+            </div>
+            
+            <nav className="flex-1 px-4 py-6 flex flex-col gap-1.5 overflow-y-auto">
+              {navItems.map((item) => {
+                const isActive = pathname?.startsWith(item.path);
+                return (
+                  <Link 
+                    key={item.path} 
+                    href={item.path}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors relative ${
+                      isActive ? "bg-[#1e40af] text-white" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                    }`}
+                  >
+                    <item.icon size={18} className={isActive ? "text-white" : "text-slate-400"} />
+                    {item.label}
+                    {isActive && <span className="absolute right-2 top-1/2 -translate-y-1/2 w-1 h-4 bg-yellow-400 rounded-full" />}
+                  </Link>
+                );
+              })}
+            </nav>
+
+            <div className="p-4 border-t border-slate-100 shrink-0">
+              <button className="flex items-center gap-3 px-3 py-2 text-sm font-semibold text-red-500 hover:bg-red-50 rounded-lg w-full transition-colors">
+                <LogOut size={18} />
+                Log Out
+              </button>
+            </div>
+          </aside>
+        </div>
+      )}
+
+      {/* Desktop Sidebar */}
+      <aside className="hidden md:flex w-64 bg-white border-r border-slate-200 flex-col h-full shrink-0">
         {/* Logo */}
         <div className="h-16 flex items-center px-6 border-b border-transparent shrink-0 mt-2">
           <Image src="/images/logo.png" alt="FlameIntel" width={140} height={32} className="h-7 w-auto object-contain" />
@@ -152,9 +197,17 @@ export default function VendorLayout({
       {/* Main Area */}
       <div className="flex-1 flex flex-col h-full overflow-hidden">
         {/* Top Navbar */}
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 shrink-0">
-          <div className="text-sm font-semibold text-slate-700">
-            {navItems.find(i => pathname?.startsWith(i.path))?.label || "Refill Orders"}
+        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-8 shrink-0">
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setIsMobileMenuOpen(true)} 
+              className="md:hidden flex items-center justify-center w-9 h-9 rounded-full text-slate-500 hover:bg-slate-50 transition-colors"
+            >
+              <Menu size={20} />
+            </button>
+            <div className="text-sm font-semibold text-slate-700 truncate">
+              {navItems.find(i => pathname?.startsWith(i.path))?.label || "Refill Orders"}
+            </div>
           </div>
           
           <div className="flex items-center gap-4">
