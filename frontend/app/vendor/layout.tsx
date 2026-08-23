@@ -1,5 +1,7 @@
 "use client";
 
+import { useState, useRef, useEffect } from "react";
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { 
@@ -21,6 +23,18 @@ export default function VendorLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const notifRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
+        setIsNotificationsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const navItems = [
     { path: "/vendor/dashboard", label: "Dashboard", icon: Home },
@@ -97,9 +111,42 @@ export default function VendorLayout({
             <button className="w-9 h-9 rounded-full border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 transition-colors">
               <Settings size={16} />
             </button>
-            <button className="w-9 h-9 rounded-full border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 transition-colors relative">
-              <Bell size={16} />
-            </button>
+            
+            {/* Notification Bell with Dropdown */}
+            <div className="relative" ref={notifRef}>
+              <button 
+                onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                className={`w-9 h-9 rounded-full border border-slate-200 flex items-center justify-center transition-colors relative ${isNotificationsOpen ? 'bg-slate-100 text-blue-600 border-blue-200' : 'text-slate-500 hover:bg-slate-50'}`}
+              >
+                <Bell size={16} />
+              </button>
+
+              {/* Dropdown Menu */}
+              {isNotificationsOpen && (
+                <div className="absolute right-0 mt-2 w-80 bg-white border border-slate-200 rounded-xl shadow-lg shadow-slate-200/50 z-50 overflow-hidden flex flex-col">
+                  <div className="p-4 border-b border-slate-100 flex justify-between items-center">
+                    <h3 className="font-bold text-slate-800 text-sm">Notifications</h3>
+                    <button className="text-xs text-blue-600 font-medium hover:underline">Mark all as read</button>
+                  </div>
+                  
+                  {/* Empty State */}
+                  <div className="p-8 flex flex-col items-center justify-center text-center">
+                    <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 mb-3">
+                      <Bell size={24} />
+                    </div>
+                    <p className="font-medium text-slate-800 text-sm mb-1">No new notifications</p>
+                    <p className="text-xs text-slate-500">You're all caught up! Check back later for updates on your refill orders.</p>
+                  </div>
+                  
+                  {/* View all button */}
+                  <div className="p-3 border-t border-slate-100 bg-slate-50/50">
+                     <button className="w-full py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-50 border border-transparent hover:border-slate-200 rounded-lg transition-all">
+                       View all notifications
+                     </button>
+                  </div>
+                </div>
+              )}
+            </div>
             <div className="flex items-center gap-2 pl-2">
               <div className="w-8 h-8 rounded-full bg-slate-200 overflow-hidden">
                 <img src="https://i.pravatar.cc/150?img=11" alt="Victor" className="w-full h-full object-cover" />
