@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -58,6 +59,7 @@ export default function Sidebar({
   onClose: () => void;
 }) {
   const items = NAV_ITEMS[portal];
+  const pathname = usePathname();
   const [lightMode, setLightMode] = useState(true);
 
   return (
@@ -88,16 +90,23 @@ export default function Sidebar({
         </div>
 
         <div className="flex flex-1 flex-col gap-1">
-          {items.map(({ path, label, icon: Icon }) => (
-            <Link
-              key={path}
-              href={`/${portal}/${path}`}
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-ink-500 hover:bg-brand-50"
-            >
-              <Icon size={17} className="text-muted-500" />
-              {label}
-            </Link>
-          ))}
+          {items.map(({ path, label, icon: Icon }) => {
+            const isActive = pathname?.includes(`/${portal}/${path}`);
+            return (
+              <Link
+                key={path}
+                href={`/${portal}/${path}`}
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all ${
+                  isActive 
+                    ? "bg-[#1e40af] text-white shadow-md shadow-blue-500/20 font-medium" 
+                    : "text-ink-500 hover:bg-brand-50"
+                }`}
+              >
+                <Icon size={17} className={isActive ? "text-white" : "text-muted-500"} />
+                {label}
+              </Link>
+            );
+          })}
         </div>
 
         <div className="mt-auto flex flex-col gap-1 border-t border-border pt-3">

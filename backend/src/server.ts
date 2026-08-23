@@ -9,6 +9,7 @@ import { notificationService } from './services/notificationService.js'
 import { predictionJob } from './jobs/predictionJob.js';
 import { payoutJob } from './jobs/payoutJob.js';
 import { authenticate, authorizeAdmin, deleteSelf, deleteUsers, flagVendor, forgotPassword, getMe, getTotalProfit, getUsers, resetPassword, signIn, signUp, updateProfile, verifyOtp } from './controllers/authControl.js';
+import { chat } from './controllers/aiController.js';
 import { uploadProfilePicture } from './controllers/uploadController.js';
 import { encryptionController } from './controllers/encryptionController.js';
 import orderRoutes from './routesF/orderRoutes.js';
@@ -797,6 +798,9 @@ app.get('/api/notifications', authenticate, async (req, res) => {
     return res.status(500).json({ success: false, message: 'Failed to fetch notifications.' });
   }
 });
+
+// --- AI Chat Route ---
+app.post('/api/ai/chat', authenticate, chat);
 
 // PATCH /api/notifications/:id/read — mark a notification as read
 app.patch('/api/notifications/:id/read', authenticate, async (req, res) => {
