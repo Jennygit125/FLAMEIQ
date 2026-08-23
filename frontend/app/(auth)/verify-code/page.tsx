@@ -61,7 +61,7 @@ function VerifyCodeContent() {
         await resendSignupCode({ email });
       } else {
         await sendPasswordReset({ email });
-      }
+      }   
     } catch {
       setError("Unable to resend code. Please try again.");
     }

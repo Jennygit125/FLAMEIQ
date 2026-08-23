@@ -25,7 +25,7 @@ export default function Navbar({
       {portal === "customer" ? (
         <div className="flex flex-1 items-center gap-2 text-sm text-ink-500">
           
-          <span className="truncate">Flame Intel</span>
+          <Image src="/images/logo.png" alt="FlameIQ logo" width={140} height={34} />
         </div>
       ) : (
         <Image src="/images/logo.png" alt="FlameIQ logo" width={110} height={26} className="flex-1" />
