@@ -8,6 +8,9 @@ import {
   ReactNode,
 } from "react";
 
+import { setAuthToken, logoutUser } from "../app/utils/auth";
+
+
 interface User {
   id: string;
   name: string;
@@ -46,19 +49,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const login = (userData: User, token: string) => {
     if (typeof window !== "undefined") {
-      localStorage.setItem("flameiq_token", token);
+    
+      setAuthToken(token);
+      
+      
       localStorage.setItem("flameiq_user", JSON.stringify(userData));
     }
     setUser(userData);
   };
 
   const logout = () => {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("flameiq_token");
-      localStorage.removeItem("flameiq_user");
-    }
-    setUser(null);
-    window.location.href = "/login";
+    
+    logoutUser();
   };
 
   return (
