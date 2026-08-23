@@ -17,15 +17,15 @@ export const sendPasswordReset = (payload: { email: string }) =>
   apiClient.post("/auth/forgot-password", payload);
 
 export const verifyResetCode = (payload: { email: string; code: string }) =>
-  apiClient.post("/auth/verify-reset-code", payload);
+  apiClient.post("/auth/verify-otp", payload);
 
 // Separate from the password-reset OTP above — this confirms the email
 // address used at signup before the account can log in.
 export const verifySignupCode = (payload: { email: string; code: string }) =>
-  apiClient.post("/auth/verify-signup-code", payload);
+  apiClient.post("/auth/verify-otp", payload);
 
 export const resendSignupCode = (payload: { email: string }) =>
-  apiClient.post("/auth/resend-signup-code", payload);
+  apiClient.post("/auth/resendOtp", payload);
 
 export const resetPassword = (payload: {
   email: string;

@@ -140,7 +140,7 @@ app.post('/api/auth/login', authLimiter, signIn)
  *       200:
  *         description: A confirmation message is sent
  */
-app.post('/api/auth/reset-password', authLimiter, forgotPassword);
+app.post('/api/auth/forgot-password', authLimiter, forgotPassword);
 
 /**
  * @swagger

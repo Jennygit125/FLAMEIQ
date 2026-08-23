@@ -20,7 +20,7 @@ export default function ForgotPasswordPage() {
     setLoading(true);
     try {
       await sendPasswordReset({ email });
-      router.push(`/verify-code?email=${encodeURIComponent(email)}`);
+      router.push(`/reset-password?email=${encodeURIComponent(email)}`);
     } catch {
       setError("Unable to send reset code. Please try again.");
     } finally {
