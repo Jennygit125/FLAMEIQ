@@ -5,24 +5,26 @@ import QuickActions from "@/components/dashboard/QuickActions";
 import NearbyVendors from "@/components/dashboard/NearbyVendors";
 import MonthOverview from "@/components/dashboard/MonthOverview";
 import PromoBanner from "@/components/dashboard/PromoBanner";
-//import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
-interface User {
-  name: string;
-  role: string;
-}
 
-interface CustomerDashboardPageProps {
-  user: User | null;
-}
 
-export default function CustomerDashboardPage({ user }: CustomerDashboardPageProps) {
+
+export default function CustomerDashboardPage() {
+   const [name, setName] = useState("");
+
+  useEffect(() => {
+    const storedName = localStorage.getItem("name");
+    if (storedName) {
+      setName(storedName);
+    }
+  }, []);
   return (
     <main>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="font-heading text-xl font-bold text-ink-500">
-            Good Morning, {user?.name || ""}
+            Good Morning, {name || ""}
           </h1>
           <p className="text-sm text-muted-500">
             Here&apos;s what&apos;s new for you today.
@@ -34,7 +36,7 @@ export default function CustomerDashboardPage({ user }: CustomerDashboardPagePro
             <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-50 text-xs font-semibold text-brand-500">
               U
             </span>
-            <span className="text-sm font-medium text-ink-500">{user?.name}</span>
+            <span className="text-sm font-medium text-ink-500">{name}</span>
           </div>
         </div>
       </div>
