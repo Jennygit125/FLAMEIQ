@@ -21,13 +21,18 @@ export default function CustomerDashboardPage() {
       setName(parsedName);
     }
   }, []);
+
   return (
     <main>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="font-heading text-xl font-bold text-ink-500">
-            Good Morning, {name || ""}
-          </h1>
+          {name ? (
+            <h1 className="font-heading text-xl font-bold text-ink-500">
+              Good Morning, {name}
+            </h1>
+          ) : (
+            <p>Loading...</p>
+          )}
           <p className="text-sm text-muted-500">
             Here&apos;s what&apos;s new for you today.
           </p>
