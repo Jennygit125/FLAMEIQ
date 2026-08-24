@@ -6,7 +6,7 @@ import QuickActions from "@/components/dashboard/QuickActions";
 import NearbyVendors from "@/components/dashboard/NearbyVendors";
 import MonthOverview from "@/components/dashboard/MonthOverview";
 import PromoBanner from "@/components/dashboard/PromoBanner";
-import { useEffect, useState } from "react";
+//import { useEffect, useState } from "react";
 
 /*
  const [name, setName] = useState("");
@@ -22,9 +22,9 @@ import { useEffect, useState } from "react";
 
 */
 export default function CustomerDashboardPage() {
-    const storedName = sessionStorage.getItem("backendResponse.user.name");
+  /*  const storedName = sessionStorage.getItem("backendResponse.user.name");
     const parsedName = JSON.parse(storedName);
-    const name = parsedName;
+    const name = parsedName;*/
   return (
     <main>
       <div className="flex flex-wrap items-center justify-between gap-4">
