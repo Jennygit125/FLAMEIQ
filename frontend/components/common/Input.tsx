@@ -34,7 +34,7 @@ export default function Input({
           placeholder={placeholder}
           value={value}
           onChange={onChange}
-          className="h-[48px] w-full rounded-lg border border-[#D8E1EA] bg-white px-4 text-[13px] text-[#334155] outline-none transition placeholder:text-[#A7B2BE] focus:border-[#1F4E79] focus:ring-2 focus:ring-[#1F4E79]/10"
+          className="h-12 w-full rounded-lg border border-[#D8E1EA] bg-white px-4 text-[13px] text-[#334155] outline-none transition placeholder:text-[#A7B2BE] focus:border-500 focus:ring-2 focus:ring-500/10"
         />
       </div>
     </div>
