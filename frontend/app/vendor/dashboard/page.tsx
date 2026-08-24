@@ -25,7 +25,7 @@ export default function VendorDashboardPage() {
           <span className="font-semibold text-slate-800">Home</span>
         </div>
         <h1 className="text-2xl font-bold text-slate-800">Good Morning, Adunni👋</h1>
-        <p className="text-sm text-slate-500 mt-1">Here's what's happening with your refill service today</p>
+        <p className="text-sm text-slate-500 mt-1">Here&apos;s what&apos;s happening with your refill service today</p>
       </div>
 
       {/* Top Stats Row */}
@@ -37,7 +37,7 @@ export default function VendorDashboardPage() {
               <ClipboardList size={20} />
             </div>
             <div className="text-right">
-              <p className="text-[10px] uppercase font-bold text-slate-400 mb-1 tracking-wider">Today's Order</p>
+              <p className="text-[10px] uppercase font-bold text-slate-400 mb-1 tracking-wider">Today&#39;s Order</p>
               <p className="text-xl font-bold text-blue-900 leading-none">14</p>
             </div>
           </div>
@@ -69,7 +69,7 @@ export default function VendorDashboardPage() {
               <Banknote size={20} />
             </div>
             <div className="text-right">
-              <p className="text-[10px] uppercase font-bold text-slate-400 mb-1 tracking-wider">Today's Revenue</p>
+              <p className="text-[10px] uppercase font-bold text-slate-400 mb-1 tracking-wider">Today&apos;s Revenue</p>
               <p className="text-xl font-bold text-blue-900 leading-none">₦125,950</p>
             </div>
           </div>
@@ -287,7 +287,7 @@ export default function VendorDashboardPage() {
           <h2 className="font-bold text-slate-800 text-sm mb-4">Recent Orders</h2>
           
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[500px]">
+            <table className="w-full text-left border-collapse min-w-125">
               <thead>
                 <tr className="border-b border-slate-100 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                   <th className="pb-3 font-semibold">Orders ID</th>
