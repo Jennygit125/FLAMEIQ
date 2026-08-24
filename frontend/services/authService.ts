@@ -29,7 +29,7 @@ export const verifySignupCode = (payload: { email: string; otp: string }) =>
 // added — the UI already handles that failure gracefully rather than
 // breaking, per the "keep a working mock/fallback state" requirement.
 export const resendSignupCode = (payload: { email: string }) =>
-  apiClient.post("/auth/resend-otp", payload);
+  apiClient.post("/auth/resendOtp", payload);
 
 // Password reset is a single combined step on the backend — there is no
 // separate "verify code" call. Field names/shape must match resetPassword
