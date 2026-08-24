@@ -6,27 +6,38 @@ import QuickActions from "@/components/dashboard/QuickActions";
 import NearbyVendors from "@/components/dashboard/NearbyVendors";
 import MonthOverview from "@/components/dashboard/MonthOverview";
 import PromoBanner from "@/components/dashboard/PromoBanner";
-import { useEffect, useState } from "react";
+import { constants } from "buffer";
+//import { useEffect, useState } from "react";
 
+/*
+ const [name, setName] = useState("");
 
-
-
-export default function CustomerDashboardPage() {
-   const [name, setName] = useState("");
 
   useEffect(() => {
-    const storedName = localStorage.getItem("name");
+    const storedName = sessionStorage.getItem("backendResponse");
     if (storedName) {
-      setName(storedName);
+      const parsedName = JSON.parse(storedName);
+      setName(prevName => parsedName); // Use the callback form of setState
     }
   }, []);
+
+*/
+export default function CustomerDashboardPage() {
+  /*  const storedName = sessionStorage.getItem("backendResponse.user.name");
+    const parsedName = JSON.parse(storedName);
+    const name = parsedName;*/
+    const name = "";
   return (
     <main>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="font-heading text-xl font-bold text-ink-500">
-            Good Morning, {name || ""}
-          </h1>
+          {name ? (
+            <h1 className="font-heading text-xl font-bold text-ink-500">
+              Good Morning, {name}
+            </h1>
+          ) : (
+            <p>Good Morning.</p>
+          )}
           <p className="text-sm text-muted-500">
             Here&apos;s what&apos;s new for you today.
           </p>
