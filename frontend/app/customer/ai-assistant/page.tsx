@@ -5,7 +5,8 @@ import { Send, Search, Sparkles } from "lucide-react";
 
 // Shared flame icon artwork — background color is the only thing that
 // changes between the active (blue) and inactive (gray) states.
-function FlameAvatarIcon({ active = true, size = 30 }) {
+function FlameAvatarIcon({ active = true, size = 30 }: { active?: boolean; size?: number }) {
+
   return (
     <svg width={size} height={size} viewBox="0 0 91 91" fill="none" xmlns="http://www.w3.org/2000/svg">
       <rect width="91" height="91" rx="45.5" fill={active ? "#1F4E79" : "#868C98"} />
@@ -28,7 +29,7 @@ const QUICK_PROMPTS = [
 ];
 
 // Deterministic mock "intelligence" — scripted answers keyed by intent.
-function mockReply(userText) {
+function mockReply(userText: string) {
   const t = userText.toLowerCase();
 
   if (t.includes("spend") || t.includes("spent") || t.includes("cost this")) {
@@ -70,7 +71,15 @@ function TypingDots() {
   );
 }
 
-function ChatMessage({ role, text }) {
+type Message = {
+  role: "bot" | string;
+  text: string;
+};
+
+function ChatMessage({ role, text }: { role: "bot" | string; text: string }) {
+
+
+
   const isBot = role === "bot";
   return (
     <div className={`fi-msg-row ${isBot ? "fi-row-bot" : "fi-row-user"}`}>
@@ -86,11 +95,20 @@ function ChatMessage({ role, text }) {
   );
 }
 
-function AssistantPanel({ messages, isTyping, input, setInput, onSend, scrollRef }) {
-  function handleSubmit(e) {
+function AssistantPanel({ messages, isTyping, input, setInput, onSend, scrollRef }: {
+  messages: Message[];
+  isTyping: boolean;
+  input: string;
+  setInput: (value: string) => void;
+  onSend: (input: string) => void;
+  scrollRef: React.RefObject<HTMLDivElement | null>;
+}) {
+
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     onSend(input);
   }
+
 
   return (
     <div className="fi-assistant">
@@ -103,9 +121,9 @@ function AssistantPanel({ messages, isTyping, input, setInput, onSend, scrollRef
       </div>
 
       <div className="fi-chat-scroll" ref={scrollRef}>
-        {messages.map((m, i) => (
-          <ChatMessage key={i} role={m.role} text={m.text} />
-        ))}
+        {messages.map((message: Message, i: number) => (
+  <ChatMessage key={i} role={message.role} text={message.text} />
+))}
         {isTyping && (
           <div className="fi-msg-row fi-row-bot">
             <div className="fi-avatar">
@@ -134,7 +152,12 @@ function AssistantPanel({ messages, isTyping, input, setInput, onSend, scrollRef
   );
 }
 
-function SidePanel({ history, isTyping, onPromptClick }) {
+type SidePanelProps = {
+  history: string[];
+  isTyping: boolean;
+  onPromptClick: (input: string) => void;
+};
+function SidePanel({ history, isTyping, onPromptClick }: SidePanelProps) {
   return (
     <aside className="fi-side">
       <div className="fi-side-card">
@@ -182,21 +205,23 @@ function SidePanel({ history, isTyping, onPromptClick }) {
   );
 }
 
+
 export default function FlameIntelApp() {
   const [messages, setMessages] = useState([
     { role: "bot", text: "Hi! I'm your FlameIntel assistant. Ask me anything about your gas usage, refills, or orders." },
   ]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const scrollRef = useRef(null);
-
+ // const scrollRef = useRef(null);
+const scrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (scrollRef.current) {
+      
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, isTyping]);
 
-  function sendMessage(text) {
+  function sendMessage(text: string) {
     const trimmed = text.trim();
     if (!trimmed || isTyping) return;
 
@@ -212,7 +237,7 @@ export default function FlameIntelApp() {
   }
 
   // Most recent unique user questions, newest first.
-  const searchHistory = [];
+  const searchHistory: string[] = [];
   for (let i = messages.length - 1; i >= 0; i--) {
     const m = messages[i];
     if (m.role === "user" && !searchHistory.includes(m.text)) {
