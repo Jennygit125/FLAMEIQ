@@ -41,7 +41,6 @@ const NAV_ITEMS: Record<Portal, NavItem[]> = {
   vendor: [
     { path: "dashboard", label: "Home", icon: LayoutDashboard },
     { path: "inventory", label: "Inventory", icon: Package },
-    { path: "analytics", label: "Analytics", icon: BarChart3 },
     { path: "earnings", label: "Earnings", icon: DollarSign },
     { path: "orders", label: "Orders", icon: ClipboardList },
     { path: "settings", label: "Settings", icon: Settings },
