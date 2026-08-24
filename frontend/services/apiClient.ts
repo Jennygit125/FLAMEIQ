@@ -17,7 +17,7 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
-apiClient.interceptors.response.use(
+/*apiClient.interceptors.response.use(
   (response) => {
     // Store the response in session storage
     sessionStorage.setItem("backendResponse", JSON.stringify(response.data));
@@ -28,6 +28,6 @@ apiClient.interceptors.response.use(
     sessionStorage.removeItem("backendResponse");
     throw error;
   }
-);
+);*/
 
 export default apiClient;

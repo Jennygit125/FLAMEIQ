@@ -8,20 +8,23 @@ import MonthOverview from "@/components/dashboard/MonthOverview";
 import PromoBanner from "@/components/dashboard/PromoBanner";
 import { useEffect, useState } from "react";
 
+/*
+ const [name, setName] = useState("");
 
-
-
-export default function CustomerDashboardPage() {
-  const [name, setName] = useState("");
 
   useEffect(() => {
     const storedName = sessionStorage.getItem("backendResponse");
     if (storedName) {
       const parsedName = JSON.parse(storedName);
-      setName(parsedName);
+      setName(prevName => parsedName); // Use the callback form of setState
     }
   }, []);
 
+*/
+export default function CustomerDashboardPage() {
+    const storedName = sessionStorage.getItem("backendResponse.user.name");
+    const parsedName = JSON.parse(storedName);
+    const name = parsedName;
   return (
     <main>
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -31,7 +34,7 @@ export default function CustomerDashboardPage() {
               Good Morning, {name}
             </h1>
           ) : (
-            <p>Loading...</p>
+            <p>Good Morning.</p>
           )}
           <p className="text-sm text-muted-500">
             Here&apos;s what&apos;s new for you today.
