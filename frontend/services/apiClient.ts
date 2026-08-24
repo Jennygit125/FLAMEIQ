@@ -16,12 +16,18 @@ apiClient.interceptors.request.use((config) => {
   }
   return config;
 });
+
 apiClient.interceptors.response.use(
   (response) => {
     // Store the response in session storage
     sessionStorage.setItem("backendResponse", JSON.stringify(response.data));
     return response;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    // Clear the session storage in case of an error
+    sessionStorage.removeItem("backendResponse");
+    throw error;
+  }
 );
+
 export default apiClient;
