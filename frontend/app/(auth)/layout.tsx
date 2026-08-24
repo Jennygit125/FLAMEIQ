@@ -9,7 +9,7 @@ export default function AuthLayout({
   return (
     <div className="flex min-h-screen flex-col bg-white">
       {/* Full-width header, shared by every page under (auth) */}
-      <div className="w-full px-4 py-5 sm:px-6 lg:px-[58px]">
+      <div className="w-full px-4 py-5 sm:px-6 lg:px-14.5">
         <AuthScreenHeader />
       </div>
 

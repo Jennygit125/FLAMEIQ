@@ -65,7 +65,7 @@ export default function WelcomePage() {
         "
       >
         <div className="max-w-xl">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#1f4e79] px-3 py-1 text-xs font-semibold text-white">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-500 px-3 py-1 text-xs font-semibold text-white">
             <Flame size={12} className="text-white" />
             Smart Gas Delivery
           </span>
