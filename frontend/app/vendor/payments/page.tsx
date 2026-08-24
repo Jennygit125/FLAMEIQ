@@ -14,9 +14,9 @@ interface BankDetails {
 export default function VendorPaymentsPage() {
   // 1. Fully interactive state for editing bank details based on team feedback
   const [bank, setBank] = useState<BankDetails>({
-    bankName: "Zenith Bank PLC",
-    accountNumber: "1012345678",
-    accountName: "FlameIntel Gas Hub - Lagos",
+    bankName: "Flutterwave MFB",
+    accountNumber: "9748044285",
+    accountName: "",
   });
 
   const [isEditingBank, setIsEditingBank] = useState(false);
