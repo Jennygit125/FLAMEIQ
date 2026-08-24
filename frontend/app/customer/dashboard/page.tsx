@@ -1,3 +1,4 @@
+"use client";
 //import { Search, } from "lucide-react";
 import SmartRefillGauge from "@/components/dashboard/SmartRefillGauge";
 import ActiveDelivery from "@/components/dashboard/ActiveDelivery";
