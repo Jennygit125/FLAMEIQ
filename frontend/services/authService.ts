@@ -39,3 +39,10 @@ export const resetPassword = (payload: {
   otp: string;
   newPassword: string;
 }) => apiClient.post("/auth/reset-password", payload);
+
+export const updateProfile = (payload: {
+  businessName?: string;
+  phone?: string;
+  address?: string;
+  isVendor?: boolean;
+}) => apiClient.patch("/auth/profile", payload);
