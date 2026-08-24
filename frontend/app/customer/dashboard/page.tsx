@@ -12,12 +12,13 @@ import { useEffect, useState } from "react";
 
 
 export default function CustomerDashboardPage() {
-   const [name, setName] = useState("");
+  const [name, setName] = useState("");
 
   useEffect(() => {
-    const storedName = localStorage.getItem("name");
+    const storedName = sessionStorage.getItem("backendResponse");
     if (storedName) {
-      setName(storedName);
+      const parsedName = JSON.parse(storedName);
+      setName(parsedName);
     }
   }, []);
   return (
