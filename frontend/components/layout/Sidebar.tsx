@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+//import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -14,13 +14,12 @@ import {
   ClipboardList,
   LogOut,
   Bot,
-  Moon,
   X,
   HistoryIcon,
 } from "lucide-react";
 //import { useTheme} from "@/context/ThemeContext";
 import type { Portal } from "@/types/portal";
-import { logout } from "@/services/authService";
+import { useAuth } from "@/context/AuthContext";
 
 type NavItem = {
   path: string;
@@ -58,7 +57,8 @@ export default function Sidebar({
 }) {
   const items = NAV_ITEMS[portal];
   const pathname = usePathname();
-  const [lightMode, setLightMode] = useState(true);
+  const { logout } = useAuth();
+ // const [lightMode, setLightMode] = useState(true);
 
   return (
     <>
