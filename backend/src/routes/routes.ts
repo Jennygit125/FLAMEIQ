@@ -1,216 +1,802 @@
-import { Router, Request, Response, Application } from 'express';
+import { notificationService } from '../services/notificationService.js'
+import { authLimiter } from '../middleware/rateLimiter.js';
+import { authenticate, authorizeAdmin, deleteSelf, deleteUsers, flagVendor, forgotPassword, getMe, getTotalProfit, getUsers, resendOtp, resetPassword, signIn, signUp, updateProfile, verifyOtp } from '../controllers/authControl.js';
+import { uploadProfilePicture } from '../controllers/uploadController.js';
+import { encryptionController } from '../controllers/encryptionController.js';
+import orderRoutes from '../routes/orderRoutes.js';
+import paymentRoutes from '../routes/paymentRoutes.js';
+import payoutRoutes from '../routes/payoutRoutes.js';
+import cylinderRoutes from '../routes/cylinderRoutes.js';
+import reviewRoutes from '../routes/reviewRoutes.js';
+import {aiService} from '../services/aiService.js';
+import { Router } from 'express';
+import multer from 'multer';
+// Multer setup for in-memory file storage
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
-interface ExpressLayer {
-  handle: any;
-  name: string;
-  params?: any;
-  path?: string;
-  keys: any[];
-  regexp: RegExp;
-  route?: {
-    path: string;
-    stack: ExpressLayer[];
-    methods: { [method: string]: boolean };
-  };
-}
+const route = Router();
 
-interface Endpoint {
-    path: string;
-    methods: string[];
-    middlewares: string[];
-}
+/**
+ * @swagger
+ * /api/auth/signup:
+ *   post:
+ *     summary: Register a new user
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: User created successfully
+ */
+route.post('/api/auth/signup', authLimiter, signUp)
 
-const getEndpoints = (app: Application): Endpoint[] => {
-    const endpoints: Endpoint[] = [];
-    const router = (app as any)._router;
-  
-    if (!router || !router.stack) {
-      console.log("DEBUG: Router or router stack not available on the app object.");
-      return endpoints;
-    }
-  
-    const parseStack = (stack: ExpressLayer[], prefix: string = '') => {
-        stack.forEach((layer: ExpressLayer) => {
-            
-            if (layer.route) {
-                // It's a direct route on the current router
-                const path = prefix + layer.route.path;
-                const methods = Object.keys(layer.route.methods).filter(method => layer.route?.methods[method]).map(method => method.toUpperCase());
-                endpoints.push({
-                    path,
-                    methods,
-                    middlewares: layer.route.stack.map(l => l.handle.name || 'anonymous')
-                });
-            } else if (layer.name === 'router' && layer.handle.stack) {
-                // It's a sub-router, recurse into its stack
-                const newPrefix = prefix + (extractPathFromRegexp(layer.regexp) || '');
-                parseStack(layer.handle.stack, newPrefix);
-            }
-        });
-    }
+/**
+ * @swagger
+ * /api/auth/verify-otp:
+ *   post:
+ *     summary: Verify user account with OTP
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               userId:
+ *                 type: string
+ *               otp:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Account verified successfully, returns JWT
+ */
+route.post('/api/auth/verify-otp', authLimiter, verifyOtp);
 
-    const extractPathFromRegexp = (regexp: RegExp) => {
-        if (!regexp) return '';
-        
-        // This is a simplified parser for the regex express uses for router paths.
-        // It aims to remove regex complexities to get a clean path prefix.
-        const path = regexp.source
-            .replace(/\\\//g, '/') // Unescape slashes
-            .replace(/^\^/, '')      // Remove start anchor
-            .replace(/\/\?\(\?=/g, '') // Remove trailing slash lookahead
-            .replace(/\$$/, '');     // Remove end anchor
+route.post('/api/auth/resendOtp', authLimiter, resendOtp)
+/**
+ * @swagger
+ * /api/auth/signin:
+ *   post:
+ *     summary: Sign in with email and password
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Sign-in completed
+ *       401:
+ *         description: Invalid email or password
+ */
+route.post('/api/auth/signin', authLimiter, signIn)
+route.post('/api/auth/login', authLimiter, signIn)
 
-        // For a router mounted at '/', the regex is `^\/?(?=\/|$)` which becomes `/`
-        if (path === '/') return '';
-        
-        // For routers like `app.use('/api', router)`, the regex is `^\\/api\\/?(?=\\/|$)`
-        // which becomes `/api`. We want to keep this prefix.
-        return path.replace(/\/$/, ''); // remove trailing slash
-    }
+/**
+ * @swagger
+ * /api/auth/forgot-password:
+ *   post:
+ *     summary: Request a password reset OTP
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: A confirmation message is sent
+ */
+route.post('/api/auth/forgot-password', authLimiter, forgotPassword);
 
-    parseStack(router.stack);
-    return endpoints;
-};
+/**
+ * @swagger
+ * /api/auth/reset-password:
+ *   post:
+ *     summary: Reset password with a valid OTP
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *               otp:
+ *                 type: string
+ *               newPassword:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Password has been reset successfully
+ */
+route.post('/api/auth/reset-password', authLimiter, resetPassword);
 
-const createRoutesRouter = (app: Application): Router => {
-  const routesRouter = Router();
+/**
+ * @swagger
+ * /api/auth/profile:
+ *   put:
+ *     summary: Update user profile
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Profile updated successfully
+ *   patch:
+ *     summary: Update user profile
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Profile updated successfully
+ */
+route.put('/api/auth/profile', authenticate, updateProfile)
+route.patch('/api/auth/profile', authenticate, updateProfile)
 
-  routesRouter.get('/', async (req: Request, res: Response) => {
-    const rawEndpoints = getEndpoints(app);
+/**
+ * @swagger
+ * /api/auth/profile/picture:
+ *   post:
+ *     summary: Upload or update a user's profile picture
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               profileImage:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: Profile picture updated successfully.
+ *       400:
+ *         description: No file uploaded.
+ */
+route.post('/api/auth/profile/picture', authenticate, upload.single('profileImage'), uploadProfilePicture);
 
-    // --- DEBUGGING: Log raw endpoints and router stack ---
-    console.log('--- Manual Endpoint Lister Debug ---');
-    console.log('Raw Endpoints Found:', JSON.stringify(rawEndpoints, null, 2));
+/**
+ * @swagger
+ * /api/auth/me:
+ *   get:
+ *     summary: Get the profile of the currently authenticated user
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User profile data retrieved successfully.
+ *       401:
+ *         description: Unauthorized.
+ */
+route.get('/api/auth/me', authenticate, getMe);
+/**
+ * @swagger
+ * /api/auth/me:
+ *   delete:
+ *     summary: Deletes the currently authenticated user's account (soft delete)
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Account soft-deleted successfully
+ */
+route.delete('/api/auth/me', authenticate, deleteSelf);
 
-    // Filter out the dashboard endpoint itself
-    const filteredEndpoints = rawEndpoints.filter(ep => ep.path !== '/routes');
-    
-    // Now, we also need to filter out the '/' route from the root router if it exists
-    const finalEndpoints = filteredEndpoints.filter(ep => ep.path !== '/');
+// --- Admin & User Management Routes ---
 
-    // Calculate the true total number of routes (path + method combinations)
-    const totalRoutes = finalEndpoints.reduce((acc, ep) => acc + ep.methods.length, 0);
+/**
+ * @swagger
+ * /api/users:
+ *   get:
+ *     summary: Get all users with profiles, pagination, and filtering (Admin only)
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number for pagination.
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *         description: Number of users per page (max 100).
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search users by name or email.
+ *       - in: query
+ *         name: profileType
+ *         schema:
+ *           type: string
+ *           enum: [USER, VENDOR, ADMIN]
+ *         description: Filter users by profile type.
+ *     responses:
+ *       200:
+ *         description: A paginated list of users with profile data.
+ */
+route.get('/api/users', authenticate, authorizeAdmin, getUsers);
 
-    // Generate a modern, highly readable HTML page on the fly
-    const htmlDashboard = `
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>API Route Directory</title>
-      <style>
-        :root {
-          --bg-main: #0f172a;
-          --bg-card: #1e293b;
-          --text-main: #f8fafc;
-          --text-muted: #94a3b8;
-          --get-color: #10b981;
-          --post-color: #3b82f6;
-          --put-color: #f59e0b;
-          --delete-color: #ef4444;
-          --patch-color: #a855f7;
-        }
-        body {
-          font-family: system-ui, -apple-system, sans-serif;
-          background-color: var(--bg-main);
-          color: var(--text-main);
-          margin: 0;
-          padding: 2rem;
-        }
-        .container {
-          max-width: 900px;
-          margin: 0 auto;
-        }
-        header {
-          margin-bottom: 2rem;
-          border-bottom: 1px solid #334155;
-          padding-bottom: 1rem;
-        }
-        h1 { margin: 0; font-size: 1.75rem; color: #f1f5f9; }
-        p { color: var(--text-muted); margin: 0.5rem 0 0 0; font-size: 0.95rem; }
-        .badge-count {
-          background: #334155;
-          padding: 0.2rem 0.6rem;
-          border-radius: 12px;
-          font-size: 0.85rem;
-        }
-        .route-card {
-          background-color: var(--bg-card);
-          border-radius: 8px;
-          padding: 1rem;
-          margin-bottom: 0.75rem;
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-          border: 1px solid #334155;
-          transition: transform 0.15s ease, border-color 0.15s ease;
-        }
-        .route-card:hover {
-          transform: translateX(4px);
-          border-color: #475569;
-        }
-        .method-badge {
-          font-family: monospace;
-          font-weight: 700;
-          font-size: 0.85rem;
-          padding: 0.4rem 0.75rem;
-          border-radius: 6px;
-          min-width: 65px;
-          text-align: center;
-          text-transform: uppercase;
-        }
-        .GET { background: rgba(16, 185, 129, 0.15); color: var(--get-color); border: 1px solid rgba(16, 185, 129, 0.3); }
-        .POST { background: rgba(59, 130, 246, 0.15); color: var(--post-color); border: 1px solid rgba(59, 130, 246, 0.3); }
-        .PUT { background: rgba(245, 158, 11, 0.15); color: var(--put-color); border: 1px solid rgba(245, 158, 11, 0.3); }
-        .DELETE { background: rgba(239, 68, 68, 0.15); color: var(--delete-color); border: 1px solid rgba(239, 68, 68, 0.3); }
-        .PATCH { background: rgba(168, 85, 247, 0.15); color: var(--patch-color); border: 1px solid rgba(168, 85, 247, 0.3); }
-        .path-text {
-          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-          font-size: 1rem;
-          color: #e2e8f0;
-          flex-grow: 1;
-          word-break: break-all;
-        }
-        .middleware-tag {
-          font-size: 0.75rem;
-          color: var(--text-muted);
-          background: #334155;
-          padding: 0.2rem 0.4rem;
-          border-radius: 4px;
-          white-space: nowrap;
-        }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <header>
-          <h1>Backend API Directory <span class="badge-count">${totalRoutes} total</span></h1>
-          <p>Production environment active routes. Automatically mapped using application reflection.</p>
-        </header>
-        
-        <main>
-          ${finalEndpoints.sort((a, b) => a.path.localeCompare(b.path)).map(endpoint => 
-            endpoint.methods.map(method => `
-              <div class="route-card">
-                <span class="method-badge ${method}">${method}</span>
-                <span class="path-text">${endpoint.path}</span>
-                ${endpoint.middlewares.length > 2 ? `<span class="middleware-tag">${endpoint.middlewares.length - 1} middleware</span>` : ''}
-              </div>
-            `).join('')
-          ).join('')}
-        </main>
-      </div>
-    </body>
-    </html>
-  `;
+/**
+ * @swagger
+ * /api/profit:
+ *   get:
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Total profit.
+ */
+route.get('/api/profit', authenticate, authorizeAdmin, getTotalProfit)
 
-    // Send down the visually complete web document
-    res.setHeader('Content-Type', 'text/html');
-    res.status(200).send(htmlDashboard);
-  });
 
-  return routesRouter;
-};
+/**
+ * @swagger
+ * /api/users/{id}:
+ *   delete:
+ *     summary: Delete a user by ID (Admin only)
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User soft-deleted successfully
+ */
+route.delete('/api/users/:id', authenticate, authorizeAdmin, deleteUsers);
 
-export default createRoutesRouter;
+/**
+ * @swagger
+ * /api/users/{id}/flag:
+ *   patch:
+ *     summary: Flag a vendor (Admin only). 3 flags auto-deletes the vendor account.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The vendor's user ID.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - reason
+ *             properties:
+ *               reason:
+ *                 type: string
+ *                 description: Reason for flagging the vendor.
+ *     responses:
+ *       200:
+ *         description: Vendor flagged successfully. Returns flag count and auto-delete status.
+ *       400:
+ *         description: Invalid request or user is not a vendor.
+ *       404:
+ *         description: Vendor not found.
+ */
+route.patch('/api/users/:id/flag', authenticate, authorizeAdmin, flagVendor);
+
+/**
+ * @swagger
+ * /api/admin/profit:
+ *   get:
+ *     summary: Get total platform profit (Admin only)
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Platform total profit calculated from successful payments
+ */
+//app.get('/api/admin/profit', authenticate, authorizeAdmin, getTotalProfit);
+
+// NOTE: SSE notification stream is registered below alongside payment routes (authenticated, per-user)
+
+// --- Order Routes ---
+/**
+ * @swagger
+ * tags:
+ *   name: Orders
+ *   description: API for managing user and vendor orders
+ */
+
+/**
+ * @swagger
+ * /api/orders:
+ *   post:
+ *     summary: Create a new order
+ *     tags: [Orders]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - vendorId
+ *               - items
+ *               - type
+ *             properties:
+ *               vendorId:
+ *                 type: string
+ *                 description: The ID of the vendor to place the order with.
+ *               items:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   required:
+ *                     - name
+ *                     - quantity
+ *                     - price
+ *                   properties:
+ *                     name:
+ *                       type: string
+ *                     quantity:
+ *                       type: integer
+ *                     price:
+ *                       type: number
+ *                       format: float
+ *                 description: Array of items in the order.
+ *               type:
+ *                 type: string
+ *                 enum: [STANDARD, QUICK]
+ *                 description: Type of the order (STANDARD or QUICK).
+ *               cylinderId:
+ *                 type: string
+ *                 nullable: true
+ *                 description: Optional ID of the user's cylinder being refilled.
+ *     responses:
+ *       201:
+ *         description: Order created successfully.
+ *       400:
+ *         description: Invalid input.
+ *       500:
+ *         description: Server error.
+ *   get:
+ *     summary: Get all orders for the authenticated user (customer or vendor)
+ *     tags: [Orders]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: A list of orders.
+ *       500:
+ *         description: Server error.
+ */
+/**
+ * @swagger
+ * /api/orders/{id}/cancel:
+ *   patch:
+ *     summary: Cancel a pending order
+ *     tags: [Orders]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the order to cancel.
+ *     responses:
+ *       200:
+ *         description: Order cancelled successfully.
+ *       400:
+ *         description: Order cannot be cancelled in its current state or is a quick order.
+ *       404:
+ *         description: Order not found or unauthorized.
+ *       500:
+ *         description: Server error.
+ */
+/**
+ * @swagger
+ * /api/orders/{id}/accept:
+ *   patch:
+ *     summary: Vendor accepts a pending order
+ *     tags: [Orders]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the order to accept.
+ *     responses:
+ *       200:
+ *         description: Order accepted successfully.
+ *       400:
+ *         description: Order cannot be accepted in its current state.
+ *       403:
+ *         description: Forbidden (not a vendor).
+ *       404:
+ *         description: Order not found or unauthorized.
+ *       500:
+ *         description: Server error.
+ */
+/**
+ * @swagger
+ * /api/orders/{id}/on-route:
+ *   patch:
+ *     summary: Vendor marks an accepted order as on route for delivery
+ *     tags: [Orders]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the order to mark as on route.
+ *     responses:
+ *       200:
+ *         description: Order marked as on route successfully.
+ *       400:
+ *         description: Order cannot be marked as on route in its current state.
+ *       403:
+ *         description: Forbidden (not a vendor).
+ *       404:
+ *         description: Order not found or unauthorized.
+ *       500:
+ *         description: Server error.
+ */
+/**
+ * @swagger
+ * /api/orders/{id}/delivered:
+ *   patch:
+ *     summary: Vendor marks an order as delivered
+ *     tags: [Orders]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the order to mark as delivered.
+ *     responses:
+ *       200:
+ *         description: Order marked as delivered successfully.
+ *       400:
+ *         description: Order cannot be marked as delivered in its current state.
+ *       403:
+ *         description: Forbidden (not a vendor).
+ *       404:
+ *         description: Order not found or unauthorized.
+ *       500:
+ *         description: Server error.
+ */
+/**
+ * @swagger
+ * /api/orders/{id}/reject:
+ *   patch:
+ *     summary: Vendor rejects a pending order
+ *     tags: [Orders]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the order to reject.
+ *     responses:
+ *       200:
+ *         description: Order rejected successfully.
+ *       400:
+ *         description: Order cannot be rejected in its current state.
+ *       403:
+ *         description: Forbidden (not a vendor).
+ *       404:
+ *         description: Order not found or unauthorized.
+ *       500:
+ *         description: Server error.
+ */
+route.use('/api/orders', orderRoutes);
+
+// --- Cylinder Routes ---
+/**
+ * @swagger
+ * tags:
+ *   name: Cylinders
+ *   description: API for managing user's gas cylinders
+ */
+
+/**
+ * @swagger
+ * /api/cylinders:
+ *   get:
+ *     summary: Get all registered cylinders for the authenticated user
+ *     tags: [Cylinders]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: A list of user's cylinders.
+ *       500:
+ *         description: Server error.
+ *   post:
+ *     summary: Register a new gas cylinder for the authenticated user
+ *     tags: [Cylinders]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - size
+ *             properties:
+ *               size:
+ *                 type: string
+ *                 enum: [KG_3, KG_6, KG_12, KG_12_5, KG_25]
+ *                 description: Size of the cylinder.
+ *               serialNumber:
+ *                 type: string
+ *                 nullable: true
+ *                 description: Unique serial number of the cylinder (optional).
+ *               nickname:
+ *                 type: string
+ *                 nullable: true
+ *                 description: A friendly name for the cylinder (e.g., "Kitchen Cylinder").
+ *     responses:
+ *       201:
+ *         description: Cylinder registered successfully.
+ *       400:
+ *         description: Invalid input (e.g., missing size, invalid size).
+ *       409:
+ *         description: A cylinder with this serial number already exists.
+ *       500:
+ *         description: Server error.
+ */
+/**
+ * @swagger
+ * /api/cylinders/{id}:
+ *   delete:
+ *     summary: Delete a registered cylinder
+ *     tags: [Cylinders]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the cylinder to delete.
+ *     responses:
+ *       204:
+ *         description: Cylinder deleted successfully.
+ *       404:
+ *         description: Cylinder not found or not owned by user.
+ *       500:
+ *         description: Server error.
+ */
+route.use('/api/cylinders', cylinderRoutes);
+
+// --- Review Routes ---
+/**
+ * @swagger
+ * tags:
+ *   name: Reviews
+ *   description: API for submitting reviews for completed orders
+ */
+
+/**
+ * @swagger
+ * /api/reviews:
+ *   post:
+ *     summary: Create a review for a delivered order
+ *     tags: [Reviews]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - orderId
+ *               - rating
+ *             properties:
+ *               orderId:
+ *                 type: string
+ *                 description: The ID of the delivered order to review.
+ *               rating:
+ *                 type: integer
+ *                 description: A rating from 1 to 5.
+ *                 minimum: 1
+ *                 maximum: 5
+ *               comment:
+ *                 type: string
+ *                 nullable: true
+ *                 description: An optional text comment for the review.
+ *     responses:
+ *       201:
+ *         description: Review created successfully.
+ *       400, 403, 404, 409:
+ *         description: Invalid input, not authorized, or review already exists.
+ */
+route.use('/api/reviews', reviewRoutes);
+
+// --- Prediction Routes ---
+/**
+ * @swagger
+ * tags:
+ *   name: Predictions
+ *   description: API for managing gas refill predictions
+ */
+
+/**
+ * @swagger
+ * /api/predictions:
+ *   post:
+ *     summary: Generate the prediction for a user
+ *     tags: [Predictions]
+ *     description: >
+ *       This endpoint is typically called automatically after a user registers 
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               cylinderId:
+ *                 type: string
+ *                 description: The ID of the user's first registered cylinder.
+ *     responses:
+ *       202:
+ *         description: Prediction generation has been accepted and is processing in the background.
+ */
+route.post('/api/predictions', authenticate, aiService.getRefillPrediction);
+/**
+ * @swagger
+ * /api/chat
+ * tags:
+ *   name: chat
+ *   description: API for ai chat
+ */
+route.post('/api/chat', authenticate, aiService.getChatReply);
+// --- Payout Routes ---
+/**
+ * @swagger
+ * tags:
+ *   name: Payouts
+ *   description: API for vendors to view their payout history
+ */
+route.use('/api/payouts', payoutRoutes);
+// --- Payment Routes (initiate, verify, wallet, webhook) ---
+route.use('/api/payments', paymentRoutes);
+
+// --- Encryption Route ---
+/**
+ * @swagger
+ * /api/encrypt:
+ *   post:
+ *     summary: Encrypt a payload for the payment gateway
+ *     tags: [Utility]
+ *     description: >
+ *       Encrypts a string payload using the payment gateway's public key.
+ *       **WARNING**: For PCI compliance, sensitive card data (PAN, CVV) should be
+ *       encrypted on the client-side, not sent to the server for encryption. This
+ *       endpoint receives the payload in plaintext.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               payload:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Payload encrypted successfully.
+ */
+route.post('/api/encrypt', encryptionController.encryptPayload);
+
+// --- Real-time Notifications (Server-Sent Events) ---
+// GET /api/notifications/stream — authenticated users subscribe to their own event stream
+route.get('/api/notifications/stream', authenticate, (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no'); // Disable Nginx buffering
+  res.flushHeaders();
+
+  const userId = req.user!.id;
+  notificationService.addClient(res, userId);
+
+  // Send a heartbeat every 30s to keep the connection alive
+  const heartbeat = setInterval(() => {
+    res.write(': heartbeat\n\n');
+  }, 30000);
+
+  res.on('close', () => clearInterval(heartbeat));
+});
+
+// GET /api/notifications — fetch persisted notifications for the user
+route.get('/api/notifications', authenticate, async (req, res) => {
+  try {
+    const { prisma } = await import('../db/prisma.js');
+    const userId = req.user!.id;
+    const notifications = await prisma.notification.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
+    return res.json({ success: true, data: notifications });
+  } catch {
+    return res.status(500).json({ success: false, message: 'Failed to fetch notifications.' });
+  }
+});
+
+// PATCH /api/notifications/:id/read — mark a notification as read
+route.patch('/api/notifications/:id/read', authenticate, async (req, res) => {
+  try {
+    const { prisma } = await import('../db/prisma.js');
+    const { id } = req.params;
+    await prisma.notification.update({ where: { id }, data: { isRead: true } });
+    return res.json({ success: true });
+  } catch {
+    return res.status(500).json({ success: false, message: 'Failed to mark notification as read.' });
+  }
+});
+export default route;

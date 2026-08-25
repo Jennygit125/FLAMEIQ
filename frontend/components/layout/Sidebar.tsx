@@ -10,7 +10,6 @@ import {
   Zap,
   Settings,
   Package,
-  BarChart3,
   DollarSign,
   ClipboardList,
   LogOut,
@@ -19,7 +18,7 @@ import {
   X,
   HistoryIcon,
 } from "lucide-react";
-import { useTheme} from "@/context/ThemeContext";
+//import { useTheme} from "@/context/ThemeContext";
 import type { Portal } from "@/types/portal";
 
 type NavItem = {

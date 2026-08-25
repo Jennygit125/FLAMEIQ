@@ -31,7 +31,6 @@ export default function LoginPage() {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-
     setError("");
 
     if (!identifier.trim() || !password) {
@@ -43,12 +42,12 @@ export default function LoginPage() {
       setLoading(true);
 
       const response = await loginUser({
-        email: identifier,
+        email: identifier.trim(),
         password: password,
+       // rememberMe, //Included in payload if backend handles persistent sessions
       });
 
-      const data = response.data;
-
+      const data = response?.data || response;
       const user = data?.user;
       const token = data?.token;
 
@@ -56,8 +55,12 @@ export default function LoginPage() {
         throw new Error("Invalid login response from server.");
       }
 
-      login(user, token);
-      const targetRoute = user?.role === "VENDOR" ? "/vendor/dashboard" : "/customer/dashboard";
+      // FIXED: Passed token first, user second (matches AuthContext signature)
+      login(token, user);
+
+      const targetRoute =
+        user?.role === "VENDOR" ? "/vendor/dashboard" : "/customer/dashboard";
+      
       router.push(targetRoute);
     } catch (err: any) {
       console.error("Login error:", err);
@@ -75,12 +78,17 @@ export default function LoginPage() {
     <main className="login-page">
       <header className="auth-header">
         <Link href="/" className="flameiq-logo">
-          <Image src="/images/logo.png" alt="FlameIntel logo" width={140} height={34} />
+          <Image
+            src="/images/logo.png"
+            alt="FlameIntel logo"
+            width={140}
+            height={34}
+            priority
+          />
         </Link>
 
         <div className="auth-header-right">
           <span>Don&apos;t have an account?</span>
-
           <Link href="/signup" className="signup-link">
             Sign Up
           </Link>
@@ -104,13 +112,14 @@ export default function LoginPage() {
 
               <div className="input-wrapper">
                 <Mail size={20} className="input-icon" />
-
                 <input
                   id="identifier"
                   type="text"
+                  autoComplete="username"
                   placeholder="Enter email address or phone number"
                   value={identifier}
                   onChange={(event) => setIdentifier(event.target.value)}
+                  required
                 />
               </div>
             </div>
@@ -124,9 +133,11 @@ export default function LoginPage() {
                 <input
                   id="password"
                   type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
                   placeholder="Enter your password"
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
+                  required
                 />
 
                 <button
@@ -147,18 +158,20 @@ export default function LoginPage() {
                   checked={rememberMe}
                   onChange={(event) => setRememberMe(event.target.checked)}
                 />
-
                 <span>Remember me</span>
               </label>
 
               <Link href="/forgot-password">Forgot Password?</Link>
             </div>
 
-            {error && <p className="login-error">{error}</p>}
+            {error && (
+              <p className="login-error" role="alert">
+                {error}
+              </p>
+            )}
 
             <button type="submit" className="login-button" disabled={loading}>
               {loading ? "Logging in..." : "Login"}
-
               {!loading && <ArrowUpRight size={20} />}
             </button>
           </form>

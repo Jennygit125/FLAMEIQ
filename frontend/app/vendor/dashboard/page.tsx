@@ -14,7 +14,97 @@ import {
   Users
 } from "lucide-react";
 
-export default function VendorDashboardPage() {
+// --- Types & Interfaces ---
+export type OrderStatus = "pending" | "preparing" | "out_for_delivery" | "completed" | "cancelled";
+
+export interface RefillOrder {
+  id: string;
+  orderNumber: string;
+  customerName: string;
+  amount: number;
+  time: string;
+  cylinderSize: string;
+  refillType: string;
+  location: string;
+  status: OrderStatus;
+  eta?: string;
+}
+
+export interface VendorStats {
+  todaysOrdersCount: number;
+  pendingOrdersCount: number;
+  todaysRevenue: number;
+  activeDeliveriesCount: number;
+  rating: number;
+  reviewCount: number;
+}
+
+export interface DemandInsights {
+  peakDay: string;
+  peakHour: string;
+  householdsEmptyingSoon: number;
+}
+
+export interface VendorDashboardProps {
+  vendorName?: string;
+  stats?: VendorStats;
+  pendingOrders?: RefillOrder[];
+  activeDeliveries?: RefillOrder[];
+  recentOrders?: RefillOrder[];
+  insights?: DemandInsights;
+  onAcceptOrder?: (orderId: string) => void;
+}
+
+// --- Helper Functions ---
+const formatNaira = (amount: number) => {
+  return new Intl.NumberFormat("en-NG", {
+    style: "currency",
+    currency: "NGN",
+    maximumFractionDigits: 0,
+  }).format(amount);
+};
+
+const getStatusBadge = (status: OrderStatus) => {
+  switch (status) {
+    case "completed":
+      return <span className="inline-flex items-center px-2 py-0.5 rounded bg-green-100 text-green-700 font-bold text-[10px]">Completed</span>;
+    case "cancelled":
+      return <span className="inline-flex items-center px-2 py-0.5 rounded bg-red-100 text-red-600 font-bold text-[10px]">Cancelled</span>;
+    case "out_for_delivery":
+      return <span className="text-[10px] font-bold bg-green-100 text-green-700 px-2 py-0.5 rounded">Out for delivery</span>;
+    case "preparing":
+      return <span className="text-[10px] font-bold bg-orange-100 text-orange-600 px-2 py-0.5 rounded">Preparing</span>;
+    case "pending":
+    default:
+      return <span className="text-[10px] font-bold bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded">Pending</span>;
+  }
+};
+
+// --- Mock Defaults ---
+const defaultStats: VendorStats = {
+  todaysOrdersCount: 0,
+  pendingOrdersCount: 0,
+  todaysRevenue: 0,
+  activeDeliveriesCount: 0,
+  rating: 0.0,
+  reviewCount: 0,
+};
+
+const defaultInsights: DemandInsights = {
+  peakDay: "N/A",
+  peakHour: "N/A",
+  householdsEmptyingSoon: 0,
+};
+
+export default function VendorDashboardPage({
+  vendorName = "Vendor",
+  stats = defaultStats,
+  pendingOrders = [],
+  activeDeliveries = [],
+  recentOrders = [],
+  insights = defaultInsights,
+  onAcceptOrder,
+}: VendorDashboardProps) {
   return (
     <div className="h-full flex flex-col p-4 md:p-8 overflow-y-auto">
       {/* Header */}
@@ -24,7 +114,7 @@ export default function VendorDashboardPage() {
           <ChevronRight size={14} className="mx-1" />
           <span className="font-semibold text-slate-800">Home</span>
         </div>
-        <h1 className="text-2xl font-bold text-slate-800">Good Morning, Adunni👋</h1>
+        <h1 className="text-2xl font-bold text-slate-800">Good Morning, {vendorName}👋</h1>
         <p className="text-sm text-slate-500 mt-1">Here&apos;s what&apos;s happening with your refill service today</p>
       </div>
 
@@ -38,7 +128,7 @@ export default function VendorDashboardPage() {
             </div>
             <div className="text-right">
               <p className="text-[10px] uppercase font-bold text-slate-400 mb-1 tracking-wider">Today&#39;s Order</p>
-              <p className="text-xl font-bold text-blue-900 leading-none">14</p>
+              <p className="text-xl font-bold text-blue-900 leading-none">{stats.todaysOrdersCount}</p>
             </div>
           </div>
           <Link href="/vendor/orders" className="text-xs font-semibold text-blue-600 flex items-center gap-1 hover:underline">
@@ -54,7 +144,7 @@ export default function VendorDashboardPage() {
             </div>
             <div className="text-right">
               <p className="text-[10px] uppercase font-bold text-slate-400 mb-1 tracking-wider">Pending Order</p>
-              <p className="text-xl font-bold text-blue-900 leading-none">5</p>
+              <p className="text-xl font-bold text-blue-900 leading-none">{stats.pendingOrdersCount}</p>
             </div>
           </div>
           <Link href="/vendor/orders" className="text-xs font-semibold text-blue-600 flex items-center gap-1 hover:underline">
@@ -70,7 +160,7 @@ export default function VendorDashboardPage() {
             </div>
             <div className="text-right">
               <p className="text-[10px] uppercase font-bold text-slate-400 mb-1 tracking-wider">Today&apos;s Revenue</p>
-              <p className="text-xl font-bold text-blue-900 leading-none">₦125,950</p>
+              <p className="text-xl font-bold text-blue-900 leading-none">{formatNaira(stats.todaysRevenue)}</p>
             </div>
           </div>
           <Link href="/vendor/earnings" className="text-xs font-semibold text-purple-600 flex items-center gap-1 hover:underline">
@@ -86,7 +176,7 @@ export default function VendorDashboardPage() {
             </div>
             <div className="text-right">
               <p className="text-[10px] uppercase font-bold text-slate-400 mb-1 tracking-wider">Active Deliveries</p>
-              <p className="text-xl font-bold text-blue-900 leading-none">12</p>
+              <p className="text-xl font-bold text-blue-900 leading-none">{stats.activeDeliveriesCount}</p>
             </div>
           </div>
           <Link href="/vendor/orders" className="text-xs font-semibold text-yellow-600 flex items-center gap-1 hover:underline">
@@ -102,16 +192,19 @@ export default function VendorDashboardPage() {
             </div>
             <div className="text-right">
               <p className="text-[10px] uppercase font-bold text-slate-400 mb-1 tracking-wider">Customer Rating</p>
-              <p className="text-xl font-bold text-blue-900 leading-none">4.8</p>
+              <p className="text-xl font-bold text-blue-900 leading-none">{stats.rating.toFixed(1)}</p>
             </div>
           </div>
           <div className="flex items-center gap-0.5 text-yellow-400 text-[10px]">
-             <Star size={10} fill="currentColor" />
-             <Star size={10} fill="currentColor" />
-             <Star size={10} fill="currentColor" />
-             <Star size={10} fill="currentColor" />
-             <Star size={10} fill="#e2e8f0" className="text-slate-200" />
-             <span className="text-slate-400 ml-1">(128)</span>
+             {[1, 2, 3, 4, 5].map((star) => (
+               <Star 
+                 key={star} 
+                 size={10} 
+                 fill={star <= Math.round(stats.rating) ? "currentColor" : "#e2e8f0"} 
+                 className={star <= Math.round(stats.rating) ? "" : "text-slate-200"} 
+               />
+             ))}
+             <span className="text-slate-400 ml-1">({stats.reviewCount})</span>
           </div>
         </div>
       </div>
@@ -127,39 +220,45 @@ export default function VendorDashboardPage() {
           </div>
 
           <div className="flex flex-col gap-3 mb-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="border border-slate-100 rounded-lg p-3 flex gap-3 items-center hover:bg-slate-50 transition-colors">
-                <div className="w-12 h-14 bg-yellow-50 rounded-lg flex items-center justify-center shrink-0">
-                  {/* Custom Cylinder SVG */}
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="7" y="6" width="10" height="15" rx="3" fill="#EAB308"/>
-                    <rect x="9" y="3" width="6" height="3" fill="#EAB308"/>
-                    <path d="M7 9C7 7.34315 8.34315 6 10 6H14C15.6569 6 17 7.34315 17 9V11H7V9Z" fill="#CA8A04"/>
-                  </svg>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-0.5">
-                    <span className="text-xs font-bold text-slate-800">FLM-1048</span>
-                    <span className="text-xs font-bold text-blue-900">₦125,950</span>
+            {pendingOrders.length === 0 ? (
+              <p className="text-xs text-slate-400 py-4 text-center">No pending orders</p>
+            ) : (
+              pendingOrders.slice(0, 3).map((order) => (
+                <div key={order.id} className="border border-slate-100 rounded-lg p-3 flex gap-3 items-center hover:bg-slate-50 transition-colors">
+                  <div className="w-12 h-14 bg-yellow-50 rounded-lg flex items-center justify-center shrink-0">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect x="7" y="6" width="10" height="15" rx="3" fill="#EAB308"/>
+                      <rect x="9" y="3" width="6" height="3" fill="#EAB308"/>
+                      <path d="M7 9C7 7.34315 8.34315 6 10 6H14C15.6569 6 17 7.34315 17 9V11H7V9Z" fill="#CA8A04"/>
+                    </svg>
                   </div>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-semibold text-slate-700 truncate pr-2">John Adewale</span>
-                    <span className="text-[10px] text-slate-400 shrink-0">10:24 AM</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-[10px] text-slate-500">12.5 kg • Full Refill</span>
-                      <div className="flex items-center gap-1 text-[10px] text-slate-400">
-                        <MapPin size={10} /> Lekki 2, Lagos
-                      </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-0.5">
+                      <span className="text-xs font-bold text-slate-800">{order.orderNumber}</span>
+                      <span className="text-xs font-bold text-blue-900">{formatNaira(order.amount)}</span>
                     </div>
-                    <button className="bg-[#1e40af] text-white text-[10px] font-bold px-3 py-1.5 rounded-md hover:bg-blue-800 transition-colors shrink-0">
-                      Accept Order
-                    </button>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-semibold text-slate-700 truncate pr-2">{order.customerName}</span>
+                      <span className="text-[10px] text-slate-400 shrink-0">{order.time}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-[10px] text-slate-500">{order.cylinderSize} • {order.refillType}</span>
+                        <div className="flex items-center gap-1 text-[10px] text-slate-400">
+                          <MapPin size={10} /> {order.location}
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => onAcceptOrder?.(order.id)}
+                        className="bg-[#1e40af] text-white text-[10px] font-bold px-3 py-1.5 rounded-md hover:bg-blue-800 transition-colors shrink-0"
+                      >
+                        Accept Order
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
 
           <Link href="/vendor/orders" className="mt-auto w-full py-2.5 border border-slate-200 rounded-lg text-xs font-semibold text-blue-600 flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors">
@@ -175,63 +274,38 @@ export default function VendorDashboardPage() {
           </div>
 
           <div className="flex flex-col gap-3">
-            {/* Out for delivery */}
-             <div className="border border-slate-100 rounded-lg p-3 flex gap-3 items-center hover:bg-slate-50 transition-colors">
-                <div className="w-12 h-12 rounded-full bg-yellow-50 flex items-center justify-center shrink-0 text-yellow-600">
-                  <Truck size={20} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-0.5">
-                    <span className="text-xs font-bold text-slate-800">FLM-1048</span>
-                    <span className="text-[10px] font-bold bg-green-100 text-green-700 px-2 py-0.5 rounded">Out for delivery</span>
+            {activeDeliveries.length === 0 ? (
+              <p className="text-xs text-slate-400 py-4 text-center">No active deliveries</p>
+            ) : (
+              activeDeliveries.slice(0, 3).map((delivery) => (
+                <div key={delivery.id} className="border border-slate-100 rounded-lg p-3 flex gap-3 items-center hover:bg-slate-50 transition-colors">
+                  <div className="w-12 h-12 rounded-full bg-yellow-50 flex items-center justify-center shrink-0 text-yellow-600">
+                    <Truck size={20} />
                   </div>
-                  <div className="text-xs font-semibold text-slate-700 mb-1">John Adewale</div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-[10px] text-slate-500">12.5 kg • Full Refill</span>
-                      <div className="flex items-center gap-1 text-[10px] text-slate-400">
-                        <MapPin size={10} /> Lekki 2, Lagos
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-0.5">
+                      <span className="text-xs font-bold text-slate-800">{delivery.orderNumber}</span>
+                      {getStatusBadge(delivery.status)}
+                    </div>
+                    <div className="text-xs font-semibold text-slate-700 mb-1">{delivery.customerName}</div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-[10px] text-slate-500">{delivery.cylinderSize} • {delivery.refillType}</span>
+                        <div className="flex items-center gap-1 text-[10px] text-slate-400">
+                          <MapPin size={10} /> {delivery.location}
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-1">
+                        <span className="text-xs font-bold text-green-600">ETA: {delivery.eta || "-"}</span>
+                        <button className="w-6 h-6 rounded border border-blue-200 flex items-center justify-center text-blue-500 hover:bg-blue-50">
+                           <MapPin size={12} />
+                        </button>
                       </div>
                     </div>
-                    <div className="flex flex-col items-end gap-1">
-                      <span className="text-xs font-bold text-green-600">ETA: 15 min</span>
-                      <button className="w-6 h-6 rounded border border-blue-200 flex items-center justify-center text-blue-500 hover:bg-blue-50">
-                         <MapPin size={12} />
-                      </button>
-                    </div>
                   </div>
                 </div>
-              </div>
-
-              {/* Preparing */}
-              {[1, 2].map((i) => (
-                <div key={i} className="border border-slate-100 rounded-lg p-3 flex gap-3 items-center hover:bg-slate-50 transition-colors">
-                <div className="w-12 h-12 rounded-full bg-yellow-50 flex items-center justify-center shrink-0 text-yellow-600">
-                  <Truck size={20} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-0.5">
-                    <span className="text-xs font-bold text-slate-800">FLM-1043</span>
-                    <span className="text-[10px] font-bold bg-orange-100 text-orange-600 px-2 py-0.5 rounded">Preparing</span>
-                  </div>
-                  <div className="text-xs font-semibold text-slate-700 mb-1">John Mike</div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-[10px] text-slate-500">6 kg • Full Refill</span>
-                      <div className="flex items-center gap-1 text-[10px] text-slate-400">
-                        <MapPin size={10} /> Lekki 2, Lagos
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end gap-1">
-                      <span className="text-xs font-bold text-blue-600">ETA: -</span>
-                      <button className="w-6 h-6 rounded border border-blue-200 flex items-center justify-center text-blue-500 hover:bg-blue-50">
-                         <MapPin size={12} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              ))}
+              ))
+            )}
           </div>
         </div>
 
@@ -241,7 +315,7 @@ export default function VendorDashboardPage() {
       <div className="mb-8">
         <h2 className="font-bold text-slate-800 text-sm mb-4">Quick Actions</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button className="bg-yellow-50 hover:bg-yellow-100 transition-colors p-4 rounded-xl flex items-center gap-4 text-left group border border-yellow-100">
+          <Link href="/vendor/orders" className="bg-yellow-50 hover:bg-yellow-100 transition-colors p-4 rounded-xl flex items-center gap-4 text-left group border border-yellow-100">
             <div className="w-10 h-10 rounded-full bg-yellow-400 flex items-center justify-center text-yellow-900 shrink-0">
                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <rect x="7" y="6" width="10" height="15" rx="3" fill="currentColor"/>
@@ -253,9 +327,9 @@ export default function VendorDashboardPage() {
               <div className="text-[11px] text-slate-500 mt-0.5">See all orders and manage</div>
             </div>
             <ChevronRight size={16} className="text-slate-400 group-hover:text-slate-600 transition-colors" />
-          </button>
+          </Link>
 
-          <button className="bg-slate-200/50 hover:bg-slate-200 transition-colors p-4 rounded-xl flex items-center gap-4 text-left group border border-slate-200">
+          <Link href="/vendor/deliveries" className="bg-slate-200/50 hover:bg-slate-200 transition-colors p-4 rounded-xl flex items-center gap-4 text-left group border border-slate-200">
             <div className="w-10 h-10 rounded-full bg-slate-300 flex items-center justify-center text-slate-700 shrink-0">
                <ClipboardList size={20} />
             </div>
@@ -264,9 +338,9 @@ export default function VendorDashboardPage() {
               <div className="text-[11px] text-slate-500 mt-0.5">Track and manage deliveries</div>
             </div>
             <ChevronRight size={16} className="text-slate-400 group-hover:text-slate-600 transition-colors" />
-          </button>
+          </Link>
 
-          <button className="bg-purple-100 hover:bg-purple-200 transition-colors p-4 rounded-xl flex items-center gap-4 text-left group border border-purple-200">
+          <Link href="/vendor/pricing" className="bg-purple-100 hover:bg-purple-200 transition-colors p-4 rounded-xl flex items-center gap-4 text-left group border border-purple-200">
             <div className="w-10 h-10 rounded-full bg-purple-200 flex items-center justify-center text-purple-700 shrink-0">
                <Banknote size={20} />
             </div>
@@ -275,7 +349,7 @@ export default function VendorDashboardPage() {
               <div className="text-[11px] text-slate-500 mt-0.5">Adjust prices to current daily value</div>
             </div>
             <ChevronRight size={16} className="text-slate-400 group-hover:text-slate-600 transition-colors" />
-          </button>
+          </Link>
         </div>
       </div>
 
@@ -299,36 +373,24 @@ export default function VendorDashboardPage() {
                 </tr>
               </thead>
               <tbody className="text-xs">
-                <tr className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
-                  <td className="py-4 font-bold text-slate-800">FLM-1041</td>
-                  <td className="py-4 font-semibold text-slate-700">Micheal James</td>
-                  <td className="py-4 font-semibold text-slate-700">12.5 kg</td>
-                  <td className="py-4 font-bold text-blue-900">₦15,950</td>
-                  <td className="py-4 text-center">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded bg-green-100 text-green-700 font-bold text-[10px]">Completed</span>
-                  </td>
-                  <td className="py-4 text-right font-semibold text-slate-800">Today, 08:20 AM</td>
-                </tr>
-                <tr className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
-                  <td className="py-4 font-bold text-slate-800">FLM-1042</td>
-                  <td className="py-4 font-semibold text-slate-700">Micheal James</td>
-                  <td className="py-4 font-semibold text-slate-700">12 kg</td>
-                  <td className="py-4 font-bold text-blue-900">₦10,950</td>
-                  <td className="py-4 text-center">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded bg-green-100 text-green-700 font-bold text-[10px]">Completed</span>
-                  </td>
-                  <td className="py-4 text-right font-semibold text-slate-800">Today, 08:20 AM</td>
-                </tr>
-                <tr className="hover:bg-slate-50 transition-colors">
-                  <td className="py-4 font-bold text-slate-800">FLM-1043</td>
-                  <td className="py-4 font-semibold text-slate-700">Micheal James</td>
-                  <td className="py-4 font-semibold text-slate-700">6 kg</td>
-                  <td className="py-4 font-bold text-blue-900">₦5,950</td>
-                  <td className="py-4 text-center">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded bg-red-100 text-red-600 font-bold text-[10px]">Cancelled</span>
-                  </td>
-                  <td className="py-4 text-right font-semibold text-slate-800">Today, 08:20 AM</td>
-                </tr>
+                {recentOrders.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-6 text-center text-slate-400">No recent orders found.</td>
+                  </tr>
+                ) : (
+                  recentOrders.map((order) => (
+                    <tr key={order.id} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                      <td className="py-4 font-bold text-slate-800">{order.orderNumber}</td>
+                      <td className="py-4 font-semibold text-slate-700">{order.customerName}</td>
+                      <td className="py-4 font-semibold text-slate-700">{order.cylinderSize}</td>
+                      <td className="py-4 font-bold text-blue-900">{formatNaira(order.amount)}</td>
+                      <td className="py-4 text-center">
+                        {getStatusBadge(order.status)}
+                      </td>
+                      <td className="py-4 text-right font-semibold text-slate-800">{order.time}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -348,7 +410,7 @@ export default function VendorDashboardPage() {
               </div>
               <div>
                 <div className="text-xs font-bold text-slate-800">Peak Ordering Day</div>
-                <div className="text-[11px] text-slate-500 mt-0.5">Friday</div>
+                <div className="text-[11px] text-slate-500 mt-0.5">{insights.peakDay}</div>
               </div>
             </div>
 
@@ -358,7 +420,7 @@ export default function VendorDashboardPage() {
               </div>
               <div>
                 <div className="text-xs font-bold text-slate-800">Peak Ordering Hour</div>
-                <div className="text-[11px] text-slate-500 mt-0.5">4:00 PM</div>
+                <div className="text-[11px] text-slate-500 mt-0.5">{insights.peakHour}</div>
               </div>
             </div>
 
@@ -368,7 +430,7 @@ export default function VendorDashboardPage() {
               </div>
               <div>
                 <div className="text-xs font-bold text-slate-800">Households Emptying Soon</div>
-                <div className="text-[11px] text-slate-500 mt-0.5">45 <br/><span className="text-slate-400">In your zone</span></div>
+                <div className="text-[11px] text-slate-500 mt-0.5">{insights.householdsEmptyingSoon} <br/><span className="text-slate-400">In your zone</span></div>
               </div>
             </div>
           </div>

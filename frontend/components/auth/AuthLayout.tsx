@@ -10,9 +10,9 @@ export default function AuthLayout({
     <div className="min-h-screen bg-white">
       {/* Header */}
       <header className="flex h-[72px] items-center justify-between px-6 sm:px-10 lg:px-16">
-        <a href="/" className="flex items-center">
+        <link href="/" className="flex items-center">
           <Image src="/images/logo.png" alt="FlameIntel logo" width={160} height={38} />
-        </a>
+        </link>
 
         {/* Login */}
         <div className="flex items-center gap-3 text-sm">
