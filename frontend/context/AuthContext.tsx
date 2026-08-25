@@ -19,6 +19,9 @@ export interface User {
   email: string;
   role: 'USER' | 'ADMIN' | 'VENDOR';
   profile?: UserProfile | null;
+  phone?: string;
+  address?: string;
+  avatar?: string;
 }
 
 interface AuthContextType {
