@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useMemo, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   BriefcaseBusiness,
@@ -16,6 +16,7 @@ import {
   Trash2,
   UserRound,
 } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 import { updateProfile } from "@/services/authService";
 
 type ProfileVariant = "customer" | "vendor";
@@ -42,16 +43,16 @@ interface FormValues {
   areas: string;
 }
 
-const initialValues: FormValues = {
-  firstName: "Daniel",
-  middleName: "John",
-  lastName: "Udofo",
-  email: "udofodaniel@gmail.com",
-  phone: "705089365",
-  address: "Udofo Daniel Close, Ikorodu, Lagos, Nigeria.",
-  lga: "Ikorodu",
+const defaultFormValues: FormValues = {
+  firstName: "",
+  middleName: "",
+  lastName: "",
+  email: "",
+  phone: "",
+  address: "",
+  lga: "",
   country: "Nigeria",
-  dateOfBirth: "20 / 06 / 2006",
+  dateOfBirth: "",
   businessName: "",
   contact: "",
   businessAddress: "",
@@ -63,8 +64,10 @@ const initialValues: FormValues = {
 const cylinderOptions = ["3 kg", "6 kg", "12 kg", "12.5 kg", "25 kg", "50 kg"];
 
 export default function ProfilePage({ variant }: ProfilePageProps) {
-  const isVendor = variant === "vendor";
-  const [values, setValues] = useState(initialValues);
+  const { user, logout } = useAuth();
+  const isVendor = variant === "vendor" || user?.role === "VENDOR";
+
+  const [values, setValues] = useState<FormValues>(defaultFormValues);
   const [photo, setPhoto] = useState<string | null>(null);
   const [selectedCylinders, setSelectedCylinders] = useState<string[]>(["12.5 kg"]);
   const [deliveryMode, setDeliveryMode] = useState("Multiple Choice");
@@ -72,10 +75,37 @@ export default function ProfilePage({ variant }: ProfilePageProps) {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
 
-  const initials = useMemo(
-    () => `${values.firstName[0] ?? "U"}${values.lastName[0] ?? "D"}`.toUpperCase(),
-    [values.firstName, values.lastName],
-  );
+  // Sync user context data into form values when user context loads/changes
+  useEffect(() => {
+    if (user) {
+      const nameParts = (user.name || "").trim().split(" ");
+      const firstName = nameParts[0] || "";
+      const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : "";
+      const middleName = nameParts.length > 2 ? nameParts.slice(1, -1).join(" ") : "";
+
+      setValues((prev) => ({
+        ...prev,
+        firstName: firstName || prev.firstName,
+        middleName: middleName || prev.middleName,
+        lastName: lastName || prev.lastName,
+        email: user.email || prev.email,
+        phone: user.phone || prev.phone,
+        address: user.address || prev.address,
+        businessName: (user as any).businessName || prev.businessName,
+        businessAddress: (user as any).businessAddress || prev.businessAddress,
+      }));
+
+      if (user.avatar) {
+        setPhoto(user.avatar);
+      }
+    }
+  }, [user]);
+
+  const initials = useMemo(() => {
+    const f = values.firstName?.[0] ?? user?.name?.[0] ?? "U";
+    const l = values.lastName?.[0] ?? "";
+    return `${f}${l}`.toUpperCase();
+  }, [values.firstName, values.lastName, user?.name]);
 
   const updateValue = (field: keyof FormValues) => (event: ChangeEvent<HTMLInputElement>) => {
     setValues((current) => ({ ...current, [field]: event.target.value }));
@@ -99,7 +129,7 @@ export default function ProfilePage({ variant }: ProfilePageProps) {
           ? {
               businessName: values.businessName,
               phone: values.contact || values.phone,
-              address: values.businessAddress,
+              address: values.businessAddress || values.address,
               isVendor: true,
             }
           : {
@@ -137,9 +167,9 @@ export default function ProfilePage({ variant }: ProfilePageProps) {
             )}
           </div>
           <h1 className="text-[22px] font-bold leading-7">
-            {values.firstName} {values.lastName}
+            {values.firstName || values.lastName ? `${values.firstName} ${values.lastName}`.trim() : user?.name || "User"}
           </h1>
-          <p className="mt-1 text-sm text-[#252943]">{values.email}</p>
+          <p className="mt-1 text-sm text-[#252943]">{values.email || user?.email}</p>
           <div className="mx-auto mt-7 flex w-fit items-center gap-2 rounded-full bg-[#2676aa] px-5 py-2.5 text-sm font-medium text-white">
             <UserRound size={16} />
             {isVendor ? "Vendor" : "Customer"}
@@ -175,7 +205,7 @@ export default function ProfilePage({ variant }: ProfilePageProps) {
               <SettingsItem icon={<CircleHelp size={14} />} label="Contact Us" />
               <SettingsItem icon={<CircleHelp size={14} />} label="FAQ" />
               {!isVendor && <SettingsItem icon={<Star size={14} />} label="Reviews & Ratings" />}
-              <SettingsItem danger icon={<LogOut size={14} />} label="Log Out" />
+              <SettingsItem danger icon={<LogOut size={14} />} label="Log Out" onClick={logout} />
               <SettingsItem danger icon={<Trash2 size={14} />} label="Delete Account" />
             </div>
           </aside>
@@ -214,15 +244,37 @@ function SettingsItem({
   label,
   icon,
   danger = false,
+  onClick,
+  href = "#",
 }: {
   label: string;
   icon?: React.ReactNode;
   danger?: boolean;
+  onClick?: () => void;
+  href?: string;
 }) {
-  return (
-    <Link href="#" className={`flex items-center justify-between rounded-md px-2 py-2.5 ${danger ? "text-[#d95464]" : "text-[#626677]"} hover:bg-slate-50`}>
+  const content = (
+    <span className="flex w-full items-center justify-between">
       <span className="flex items-center gap-2">{icon}{label}</span>
       <ChevronRight size={13} />
+    </span>
+  );
+
+  const className = `flex w-full items-center justify-between rounded-md px-2 py-2.5 text-left ${
+    danger ? "text-[#d95464]" : "text-[#626677]"
+  } hover:bg-slate-50 transition-colors`;
+
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className={className}>
+        {content}
+      </button>
+    );
+  }
+
+  return (
+    <Link href={href} className={className}>
+      {content}
     </Link>
   );
 }
@@ -254,15 +306,15 @@ function Field({
 function CustomerFields({ values, updateValue }: { values: FormValues; updateValue: (field: keyof FormValues) => (event: ChangeEvent<HTMLInputElement>) => void }) {
   return (
     <div className="grid gap-4 sm:grid-cols-2">
-      <Field label="First Name:" value={values.firstName} onChange={updateValue("firstName")} />
-      <Field label="Middle Name:" value={values.middleName} onChange={updateValue("middleName")} />
-      <Field label="Last Name:" value={values.lastName} onChange={updateValue("lastName")} />
-      <Field label="Email" value={values.email} onChange={updateValue("email")} />
-      <Field label="Phone Number" value={values.phone} onChange={updateValue("phone")} icon={<Phone size={13} />} />
-      <Field label="Primary Address" value={values.address} onChange={updateValue("address")} icon={<MapPin size={13} />} />
-      <Field label="LGA" value={values.lga} onChange={updateValue("lga")} icon={<MapPin size={13} />} />
-      <Field label="Country" value={values.country} onChange={updateValue("country")} icon={<MapPin size={13} />} />
-      <Field label="Date Of Birth" value={values.dateOfBirth} onChange={updateValue("dateOfBirth")} />
+      <Field label="First Name:" value={values.firstName} onChange={updateValue("firstName")} placeholder="First Name" />
+      <Field label="Middle Name:" value={values.middleName} onChange={updateValue("middleName")} placeholder="Middle Name" />
+      <Field label="Last Name:" value={values.lastName} onChange={updateValue("lastName")} placeholder="Last Name" />
+      <Field label="Email" value={values.email} onChange={updateValue("email")} placeholder="Email Address" />
+      <Field label="Phone Number" value={values.phone} onChange={updateValue("phone")} placeholder="Phone Number" icon={<Phone size={13} />} />
+      <Field label="Primary Address" value={values.address} onChange={updateValue("address")} placeholder="Home Address" icon={<MapPin size={13} />} />
+      <Field label="LGA" value={values.lga} onChange={updateValue("lga")} placeholder="LGA" icon={<MapPin size={13} />} />
+      <Field label="Country" value={values.country} onChange={updateValue("country")} placeholder="Country" icon={<MapPin size={13} />} />
+      <Field label="Date Of Birth" value={values.dateOfBirth} onChange={updateValue("dateOfBirth")} placeholder="DD / MM / YYYY" />
     </div>
   );
 }
@@ -287,8 +339,8 @@ function VendorFields({
       <Field label="Business Name:" value={values.businessName} onChange={updateValue("businessName")} placeholder="Enter Your Business Name" />
       <Field label="Mode Of Contact" value={values.contact} onChange={updateValue("contact")} placeholder="Phone Number/Email" />
       <Field label="Business Address:" value={values.businessAddress} onChange={updateValue("businessAddress")} placeholder="Enter Your Business Address" />
-      <Field label="LGA" value={values.lga} onChange={updateValue("lga")} />
-      <Field label="Opening Hours" value={values.openingHours} onChange={updateValue("openingHours")} placeholder="PM / AM" />
+      <Field label="LGA" value={values.lga} onChange={updateValue("lga")} placeholder="LGA" />
+      <Field label="Opening Hours" value={values.openingHours} onChange={updateValue("openingHours")} placeholder="e.g. 8:00 AM - 6:00 PM" />
       <Field label="NIN / CAC Number" value={values.ninCac} onChange={updateValue("ninCac")} placeholder="ID Number" />
       <div>
         <span className="mb-2 block text-[11px] text-[#303447]">Available Cylinder</span>

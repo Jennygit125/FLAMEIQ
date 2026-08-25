@@ -1,49 +1,86 @@
 import dotenv from 'dotenv';
+import { z } from 'zod';
 
 dotenv.config();
 
-export const config = {
-  // Application settings
-  port: process.env.PORT || 3000,
-  env: process.env.NODE_ENV || 'development',
-  jwtSecret: process.env.JWT_SECRET || 'flameiq_secret_jwt_key_2026',
-  jwtExpiresIn: process.env.JWT_EXPIRES_IN || '1d',
-  apiBaseUrl: process.env.API_BASE_URL || 'http://localhost:3000',
-  aiApiBaseUrl: process.env.AI_API_BASE_URL,
+// Define schema for environment variables
+const envSchema = z.object({
+  PORT: z.coerce.number().default(3000),
+  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  JWT_SECRET: z.string().min(1, 'JWT_SECRET is required'),
+  JWT_EXPIRES_IN: z.string().default('1d'),
+  API_BASE_URL: z.string().url().default('http://localhost:3000'),
+  AI_API_BASE_URL: z.string().url().optional(),
 
-  // Flutterwave settings
-  flutterwaveSecretKey: process.env.FLUTTER_KEY,
-  flutterwaveSecretHash: process.env.FLUTTERWAVE_SECRET_HASH,
-  flutterwavePublicKey: process.env.FLUTTERWAVE_PUBLIC_KEY,
-  // Required only when using Flutterwave's server-side SDK encryption flow.
-  // Never expose this value through an API or NEXT_PUBLIC_ variable.
-  flutterwaveEncryptionKey: process.env.FLUTTERWAVE_ENCRYPTION_KEY,
-  flutterwaveClientId: process.env.FLUTTERWAVE_CLIENT_ID,
-  flutterwaveClientSecret: process.env.FLUTTERWAVE_CLIENT_SECRET,
-  flutterwaveBaseUrl: process.env.FLUTTERWAVE_BASE_URL || 'https://developersandbox-api.flutterwave.com',
+  // Frontend Origins
+  FRONTEND_URLS: z.string().optional(),
+  FRONTEND_URL: z.string().optional(),
 
-  // Commission rate
-  platformCommissionRate: parseFloat(process.env.PLATFORM_COMMISSION_RATE || '0.10'),
+  // Flutterwave Settings (Required for payments)
+  FLUTTER_KEY: z.string().min(1, 'FLUTTER_KEY is required'),
+  FLUTTERWAVE_SECRET_HASH: z.string().min(1, 'FLUTTERWAVE_SECRET_HASH is required'),
+  FLUTTERWAVE_PUBLIC_KEY: z.string().min(1, 'FLUTTERWAVE_PUBLIC_KEY is required'),
+  FLUTTERWAVE_ENCRYPTION_KEY: z.string().optional(),
+  FLUTTERWAVE_CLIENT_ID: z.string().optional(),
+  FLUTTERWAVE_CLIENT_SECRET: z.string().optional(),
+  FLUTTERWAVE_BASE_URL: z.string().url().default('https://developersandbox-api.flutterwave.com'),
 
-  // Job toggles
-  enablePredictionJob: process.env.ENABLE_PREDICTION_JOB === 'true', // For predictionJob
-  enablePayoutJob: process.env.ENABLE_PAYOUT_JOB === 'true', // For payoutJob
+  // Platform
+  PLATFORM_COMMISSION_RATE: z.coerce.number().default(0.10),
 
-  // Email service
-  sendlibApiKey: process.env.SENDLIB_API_KEY,
-  sendlibFromEmail: process.env.SENDLIB_FROM_EMAIL,
+  // Job Toggles (Coerce 'true'/'false' strings to boolean)
+  ENABLE_PREDICTION_JOB: z.string().optional().transform((val) => val === 'true'),
+  ENABLE_PAYOUT_JOB: z.string().optional().transform((val) => val === 'true'),
+
+  // Email Service (Required for notifications)
+  SENDLIB_API_KEY: z.string().min(1, 'SENDLIB_API_KEY is required'),
+  SENDLIB_FROM_EMAIL: z.string().email('SENDLIB_FROM_EMAIL must be a valid email address'),
+});
+
+// Run validation
+const parseEnv = () => {
+  const result = envSchema.safeParse(process.env);
+
+  if (!result.success) {
+    console.error('❌ Environment Variable Validation Failure:');
+    console.error(JSON.stringify(result.error.format(), null, 2));
+    process.exit(1); // Stop server immediately on missing config
+  }
+
+  return result.data;
 };
 
-// Basic validation for critical configs
-if (!config.flutterwaveSecretKey) {
-  console.warn('FLUTTER_KEY is not set in environment variables.');
-}
-if (!config.flutterwaveSecretHash) {
-  console.warn('FLUTTERWAVE_SECRET_HASH is not set in environment variables.');
-}
-if (!config.flutterwavePublicKey) {
-  console.warn('FLUTTERWAVE_PUBLIC_KEY is not set in environment variables.');
-}
-if (!config.sendlibApiKey || !config.sendlibFromEmail) {
-  console.warn('Email service (SENDLIB) API key or from email is not set. Email sending might be disabled.');
-}
+const env = parseEnv();
+
+// Parse frontend origins array
+const rawOrigins = env.FRONTEND_URLS || env.FRONTEND_URL || 'http://localhost:3000';
+const frontendOrigins = rawOrigins
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+export const config = {
+  port: env.PORT,
+  env: env.NODE_ENV,
+  jwtSecret: env.JWT_SECRET,
+  jwtExpiresIn: env.JWT_EXPIRES_IN,
+  apiBaseUrl: env.API_BASE_URL,
+  aiApiBaseUrl: env.AI_API_BASE_URL,
+  frontendOrigins,
+
+  flutterwaveSecretKey: env.FLUTTER_KEY,
+  flutterwaveSecretHash: env.FLUTTERWAVE_SECRET_HASH,
+  flutterwavePublicKey: env.FLUTTERWAVE_PUBLIC_KEY,
+  flutterwaveEncryptionKey: env.FLUTTERWAVE_ENCRYPTION_KEY,
+  flutterwaveClientId: env.FLUTTERWAVE_CLIENT_ID,
+  flutterwaveClientSecret: env.FLUTTERWAVE_CLIENT_SECRET,
+  flutterwaveBaseUrl: env.FLUTTERWAVE_BASE_URL,
+
+  platformCommissionRate: env.PLATFORM_COMMISSION_RATE,
+
+  enablePredictionJob: env.ENABLE_PREDICTION_JOB,
+  enablePayoutJob: env.ENABLE_PAYOUT_JOB,
+
+  sendlibApiKey: env.SENDLIB_API_KEY,
+  sendlibFromEmail: env.SENDLIB_FROM_EMAIL,
+};

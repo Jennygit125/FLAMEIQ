@@ -287,12 +287,11 @@ export const signIn = async (req: Request, res: Response) =>{
       
       throw new UnauthorizedError("Invalid email or password");
     }
-    if(user && user.profile && user.profile.isVerified === true){
-      logger.warn(`Failed login attempt for email ${email} from IP ${req.ip}`);
-      logger.warn(`Failed login attempt for email ${normalizedEmail} from IP ${(req as any).clientIp || req.ip}`);
-      
-      throw new UnauthorizedError("OTP not verified");
-    }
+    if (!user.profile || !user.profile.isVerified) {
+  logger.warn(`Unverified login attempt for email ${normalizedEmail} from IP ${(req as any).clientIp || req.ip}`);
+  
+  throw new UnauthorizedError("Account not verified. Please verify your OTP.");
+}
     const clientIp = (req as any).clientIp || req.ip || '0.0.0.0';
     const userAgent = req.headers['user-agent'] || 'unknown';
     await prisma.loginHistory.create({

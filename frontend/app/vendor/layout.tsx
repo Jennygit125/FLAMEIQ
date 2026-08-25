@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { 
@@ -9,7 +8,6 @@ import {
   Sparkles, 
   Wallet, 
   Bot, 
-  LineChart, 
   Settings, 
   LogOut,
   Bell,
@@ -18,6 +16,9 @@ import {
   X
 } from "lucide-react";
 import Image from "next/image";
+
+import { useAuth } from "@/context/AuthContext";
+import { withAuth } from "@/components/auth/useAuth";
 
 interface Notification {
   id: string;
@@ -28,18 +29,20 @@ interface Notification {
   createdAt: string;
 }
 
-export default function VendorLayout({
+function VendorLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const { user, logout } = useAuth();
+
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const notifRef = useRef<HTMLDivElement>(null);
 
-  // Handle clicking outside to close
+  // Handle clicking outside to close notifications
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
@@ -55,7 +58,6 @@ export default function VendorLayout({
     const token = localStorage.getItem("flameiq_token");
     if (!token) return;
 
-    // Fetch past notifications
     fetch("http://localhost:5000/api/notifications", {
       headers: {
         Authorization: `Bearer ${token}`
@@ -69,13 +71,11 @@ export default function VendorLayout({
       })
       .catch(err => console.error("Failed to fetch notifications:", err));
 
-    // Connect to SSE stream (we pass token via query param as implemented in backend)
     const evtSource = new EventSource(`http://localhost:5000/api/notifications/stream?token=${token}`);
     
     evtSource.onmessage = (event) => {
       try {
         const newNotif = JSON.parse(event.data);
-        // Prepend new real-time notification
         setNotifications(prev => [newNotif, ...prev]);
       } catch (err) {
         console.error("Failed to parse SSE notification:", err);
@@ -94,7 +94,6 @@ export default function VendorLayout({
     { path: "/vendor/orders", label: "Refill Orders", icon: Sparkles },
     { path: "/vendor/payments", label: "Payments", icon: Wallet },
     { path: "/vendor/ai-assistant", label: "AI Assistant", icon: Bot },
-    { path: "/vendor/analytics", label: "Analytics", icon: LineChart },
     { path: "/vendor/settings", label: "Settings", icon: Settings },
   ];
 
@@ -133,7 +132,10 @@ export default function VendorLayout({
             </nav>
 
             <div className="p-4 border-t border-slate-100 shrink-0">
-              <button className="flex items-center gap-3 px-3 py-2 text-sm font-semibold text-red-500 hover:bg-red-50 rounded-lg w-full transition-colors">
+              <button 
+                onClick={logout}
+                className="flex items-center gap-3 px-3 py-2 text-sm font-semibold text-red-500 hover:bg-red-50 rounded-lg w-full transition-colors"
+              >
                 <LogOut size={18} />
                 Log Out
               </button>
@@ -144,12 +146,10 @@ export default function VendorLayout({
 
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex w-64 bg-white border-r border-slate-200 flex-col h-full shrink-0">
-        {/* Logo */}
         <div className="h-16 flex items-center px-6 border-b border-transparent shrink-0 mt-2">
           <Image src="/images/logo.png" alt="FlameIntel" width={140} height={32} className="h-7 w-auto object-contain" />
         </div>
 
-        {/* Navigation */}
         <nav className="flex-1 px-4 py-6 flex flex-col gap-1.5 overflow-y-auto">
           {navItems.map((item) => {
             const isActive = pathname?.startsWith(item.path);
@@ -173,7 +173,6 @@ export default function VendorLayout({
           })}
         </nav>
 
-        {/* Promo Card */}
         <div className="px-4 pb-6">
           <div className="bg-[#1e40af] rounded-2xl p-5 text-white shadow-lg relative overflow-hidden">
             <h3 className="font-bold text-lg leading-tight mb-2">Never run out of cooking gas again.</h3>
@@ -185,9 +184,11 @@ export default function VendorLayout({
           </div>
         </div>
 
-        {/* Log Out */}
         <div className="p-4 border-t border-slate-100 shrink-0">
-          <button className="flex items-center gap-3 px-3 py-2 text-sm font-semibold text-red-500 hover:bg-red-50 rounded-lg w-full transition-colors">
+          <button 
+            onClick={logout}
+            className="flex items-center gap-3 px-3 py-2 text-sm font-semibold text-red-500 hover:bg-red-50 rounded-lg w-full transition-colors"
+          >
             <LogOut size={18} />
             Log Out
           </button>
@@ -211,11 +212,14 @@ export default function VendorLayout({
           </div>
           
           <div className="flex items-center gap-4">
-            <button className="w-9 h-9 rounded-full border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 transition-colors">
+            <Link 
+              href="/vendor/settings" 
+              className="w-9 h-9 rounded-full border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 transition-colors"
+            >
               <Settings size={16} />
-            </button>
+            </Link>
             
-            {/* Notification Bell with Dropdown */}
+            {/* Notification Bell Dropdown */}
             <div className="relative" ref={notifRef}>
               <button 
                 onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
@@ -227,7 +231,6 @@ export default function VendorLayout({
                 )}
               </button>
 
-              {/* Dropdown Menu */}
               {isNotificationsOpen && (
                 <div className="absolute right-0 mt-2 w-80 bg-white border border-slate-200 rounded-xl shadow-lg shadow-slate-200/50 z-50 overflow-hidden flex flex-col">
                   <div className="p-4 border-b border-slate-100 flex justify-between items-center">
@@ -238,16 +241,14 @@ export default function VendorLayout({
                   </div>
                   
                   {notifications.length === 0 ? (
-                    /* Empty State */
                     <div className="p-8 flex flex-col items-center justify-center text-center">
                       <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 mb-3">
                         <Bell size={24} />
                       </div>
                       <p className="font-medium text-slate-800 text-sm mb-1">No new notifications</p>
-                      <p className="text-xs text-slate-500">You're all caught up! Check back later for updates on your refill orders.</p>
+                      <p className="text-xs text-slate-500">You&apos;re all caught up! Check back later for updates on your refill orders.</p>
                     </div>
                   ) : (
-                    /* Notifications List */
                     <div className="max-h-80 overflow-y-auto">
                       {notifications.map((notif, index) => (
                         <div key={notif.id || index} className={`p-4 border-b border-slate-50 flex gap-3 hover:bg-slate-50 transition-colors ${!notif.isRead ? 'bg-blue-50/30' : ''}`}>
@@ -271,21 +272,26 @@ export default function VendorLayout({
                     </div>
                   )}
                   
-                  {/* View all button */}
                   <div className="p-3 border-t border-slate-100 bg-slate-50/50">
-                     <button className="w-full py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-50 border border-transparent hover:border-slate-200 rounded-lg transition-all">
-                       View all notifications
-                     </button>
+                    <button className="w-full py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-50 border border-transparent hover:border-slate-200 rounded-lg transition-all">
+                      View all notifications
+                    </button>
                   </div>
                 </div>
               )}
             </div>
+
+            {/* Profile Dropdown Indicator */}
             <div className="flex items-center gap-2 pl-2">
               <div className="w-8 h-8 rounded-full bg-slate-200 overflow-hidden">
-                <img src="https://i.pravatar.cc/150?img=11" alt="Victor" className="w-full h-full object-cover" />
+                <img
+                  src={user?.avatar || "https://i.pravatar.cc/150?img=11"} 
+                  alt={user?.name || "Vendor User"} 
+                  className="w-full h-full object-cover" 
+                />
               </div>
               <span className="text-sm font-bold text-slate-700 flex items-center gap-1 cursor-pointer">
-                Victor <span className="text-[10px] text-slate-400">▼</span>
+                {user?.name?.split(" ")[0] || "Vendor"} <span className="text-[10px] text-slate-400">▼</span>
               </span>
             </div>
           </div>
@@ -299,3 +305,6 @@ export default function VendorLayout({
     </div>
   );
 }
+
+// Restrict access strictly to VENDOR and ADMIN roles
+export default withAuth(VendorLayout, ["VENDOR", "ADMIN"]);
