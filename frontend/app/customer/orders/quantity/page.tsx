@@ -18,7 +18,7 @@ export default function OrderQuantityPage() {
   const handleContinue = () => {
     if (!selected) return;
     setCylinder(selected);
-    router.push("/customer/orders/vendor-selection");
+    router.push("/customer/orders/payment-selection");
   };
 
   return (

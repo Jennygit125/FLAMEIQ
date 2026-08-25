@@ -16,23 +16,56 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { useOrder } from "@/context/OrderContext";
-import {
-  formatCurrency,
-  formatTransactionTime,
-  generateOrderId,
-  generatePaymentReference,
-} from "@/lib/formatters";
-import type { BankDetails, PaymentStatus } from "@/types/payment";
 import PaymentStepsTracker from "@/components/orders/PaymentStepsTracker";
 
+// --- Types ---
+export type PaymentStatus = "PENDING" | "SUCCESS" | "FAILED";
+
+export interface BankDetails {
+  bankName: string;
+  bankTag: string;
+  accountName: string;
+  accountNumber: string;
+}
+
+type FlowStage = "details" | "verifying" | "success";
+
+// --- Helper Functions ---
+function generateOrderId(): string {
+  return `ORD-${Math.floor(100000 + Math.random() * 900000)}`;
+}
+
+function generatePaymentReference(): string {
+  return `GH-TRF-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+}
+
+function formatTransactionTime(): string {
+  return new Date().toLocaleString("en-US", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
+function formatCurrency(amount: number, showSymbol: boolean = true): string {
+  const formatted = new Intl.NumberFormat("en-NG", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
+
+  return showSymbol ? `₦${formatted}` : formatted;
+}
+
+// --- Constants ---
 const BANK_DETAILS: BankDetails = {
   bankName: "GTBank",
   bankTag: "GTCO",
   accountName: "GasHub Ltd",
   accountNumber: "0123456789",
 };
-
-type FlowStage = "details" | "verifying" | "success";
 
 export default function BankTransferPage() {
   const router = useRouter();
@@ -42,12 +75,10 @@ export default function BankTransferPage() {
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
   const amount = useMemo(
-    () => (order.pricePerUnit ?? 0) * order.quantity + order.deliveryFee,
-    [order.pricePerUnit, order.quantity, order.deliveryFee]
+    () => (order?.pricePerUnit ?? 0) * (order?.quantity ?? 0) + (order?.deliveryFee ?? 0),
+    [order?.pricePerUnit, order?.quantity, order?.deliveryFee]
   );
 
-  // Generated once per visit — stable across the details/verifying/success
-  // transitions since they're all the same payment attempt.
   const [orderId] = useState(generateOrderId);
   const [reference] = useState(() => generatePaymentReference());
   const [transactionTime] = useState(() => formatTransactionTime());
@@ -55,8 +86,6 @@ export default function BankTransferPage() {
   const status: PaymentStatus =
     stage === "success" ? "SUCCESS" : stage === "verifying" ? "PENDING" : "PENDING";
 
-  // Simulated verification — swap for a real polling/webhook check once
-  // the backend endpoint exists.
   useEffect(() => {
     if (stage !== "verifying") return;
     const timer = setTimeout(() => setStage("success"), 3500);
@@ -69,8 +98,7 @@ export default function BankTransferPage() {
       setCopiedField(field);
       setTimeout(() => setCopiedField((current) => (current === field ? null : current)), 1500);
     } catch {
-      // Clipboard API unavailable — silently ignore, copy buttons are a
-      // convenience, not a required action.
+      // Clipboard API fallback / silent handling
     }
   };
 
@@ -116,7 +144,7 @@ export default function BankTransferPage() {
                   </h2>
                   <p className="mt-1 text-sm text-muted-500">
                     Transfer the exact amount to the account details below,
-                    your order will be confirmed once payments is verified.
+                    your order will be confirmed once payment is verified.
                   </p>
                 </div>
               </div>
@@ -294,7 +322,7 @@ export default function BankTransferPage() {
                 </span>
               }
               title="Payment Verification"
-              message="We're verifying your bank transfer, This usually takes a few minutes"
+              message="We're verifying your bank transfer. This usually takes a few minutes."
               orderId={orderId}
               amount={amount}
               reference={reference}
@@ -320,7 +348,7 @@ export default function BankTransferPage() {
                 </span>
               }
               title="Payment Successful 🎉"
-              message="You payment have been successfully verified. Thank you for your order."
+              message="Your payment has been successfully verified. Thank you for your order."
               orderId={orderId}
               amount={amount}
               reference={reference}
@@ -394,15 +422,25 @@ function PaymentStatusView({
         <p className="mt-2 text-sm text-muted-500">{message}</p>
       </div>
 
-      <div className="mt-5 flex items-center gap-2 rounded-lg bg-success/10 px-4 py-3 text-sm font-medium text-success">
-        <CheckCircle2 size={16} className="shrink-0" />
-        Your order is now confirmed and being processed.
+      <div
+        className={`mt-5 flex items-center gap-2 rounded-lg px-4 py-3 text-sm font-medium ${
+          status === "SUCCESS"
+            ? "bg-success/10 text-success"
+            : "bg-notify-50 text-notify-700"
+        }`}
+      >
+        {status === "SUCCESS" ? (
+          <CheckCircle2 size={16} className="shrink-0" />
+        ) : (
+          <Clock3 size={16} className="shrink-0" />
+        )}
+        {status === "SUCCESS"
+          ? "Your order is now confirmed and being processed."
+          : "Payment verification in progress. Please do not close this window."}
       </div>
 
       <div className="mt-5 rounded-xl border border-border p-5">
-        <p className="text-sm font-semibold text-brand-500">
-          Payment Summary
-        </p>
+        <p className="text-sm font-semibold text-brand-500">Payment Summary</p>
 
         <div className="mt-3 space-y-3 text-sm">
           <div className="flex items-center justify-between">
@@ -425,9 +463,7 @@ function PaymentStatusView({
           </div>
           <div className="flex items-center justify-between">
             <span className="text-muted-500">Transaction Time</span>
-            <span className="font-medium text-ink-500">
-              {transactionTime}
-            </span>
+            <span className="font-medium text-ink-500">{transactionTime}</span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-muted-500">Status</span>
