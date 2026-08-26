@@ -206,7 +206,6 @@ export const verifyOtp = async (req: Request, res: Response) => {
     const otpRecord = await prisma.otpVerification.findFirst({
       where: {
         userId: user.id,
-        purpose: "REGISTRATION",
         usedAt: null, // Not yet used
         expiresAt: {
           gt: new Date(), // Not expired

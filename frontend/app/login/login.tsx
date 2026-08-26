@@ -108,7 +108,8 @@ export default function Login() {
             <h1>Welcome Back 👋</h1>
             <p>Enter your details to access your FlameIntel account.</p>
           </div>
-
+                 <p>Not verified, verify your Account here <link href="/reVerify" className="verify-link">Verify</link>
+            </p>
           <form onSubmit={handleSubmit} className="login-form">
             {/* EMAIL / PHONE */}
             <div className="form-group">
@@ -185,7 +186,7 @@ export default function Login() {
               {!loading && <ArrowUpRight size={20} />}
             </button>
           </form>
-
+          
           <p className="create-account">
             Don&apos;t have a FlameIntel account?{" "}
             <Link href="/signup">Create Account</Link>
