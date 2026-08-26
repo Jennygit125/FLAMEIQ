@@ -52,12 +52,11 @@ function VerifyCodeContent() {
   const handleResend = async () => {
     setCode(Array(OTP_LENGTH).fill(""));
     setError("");
+     setLoading(true);
     try {
-      if (purpose === "signup") {
+      
         await resendSignupCode({ email });
-      } else {
-        await sendPasswordReset({ email });
-      }   
+     setLoading(false);
     } catch {
       setError(
         purpose === "signup"
@@ -100,10 +99,10 @@ function VerifyCodeContent() {
           <button
             type="button"
             onClick={handleResend}
-            disabled={loading}
-          className="text-sm font-medium text-notify-600 hover:text-notify-700"
+            disabled={!isComplete|| loading}
+          className="text-sm font-medium text-notify-600 hover:text-notify-800 cursor-pointer"
         >
-          Resend code
+          {loading ? "Verifying…" : "Resend Code"}
         </button>
 
         {error && <p className="text-sm text-notify-600">{error}</p>}
