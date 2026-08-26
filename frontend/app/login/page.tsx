@@ -104,8 +104,7 @@ export default function LoginPage() {
           <div className="login-heading">
             <h1>Welcome Back 👋</h1>
             <p>Enter your details to access your FlameIntel account.</p>
-          </div>
-
+          </div>            
           <form onSubmit={handleSubmit} className="login-form">
             <div className="form-group">
               <label htmlFor="identifier">Email Address or Phone number</label>
@@ -175,7 +174,9 @@ export default function LoginPage() {
               {!loading && <ArrowUpRight size={20} />}
             </button>
           </form>
-
+          <p  className="text-gray-500 align-right text-sm mt-5 ">Click to verify:{" "}
+            <button className="text-blue-500 underline hover:text-blue-600 cursor-pointer" onClick={() => window.location.href = "/verify" }>verify</button>
+            </p>
           <p className="create-account">
             Don&apos;t have a FlameIntel account?{" "}
             <Link href="/signup">Create Account</Link>

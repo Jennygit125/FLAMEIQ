@@ -3,8 +3,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { prisma } from "@/db/prisma.js";
 import * as adminService from '@/services/adminService.js'
-import { logger } from '@/utils/logger.js'; //import { UnauthorizedError, AppError } from '@/utils/errors.js';
-//import { UnauthorizedError, AppError } from '@/utils/errors.js';
+import { logger } from '@/utils/logger.js'; 
 import { generateOtp, getOtpExpiration, hashOtp } from "@/utils/otp.js";
 import { emailService } from "../services/emailService.js";
 //import { uploadToCloudinary } from "../utils/upload";
@@ -207,7 +206,6 @@ export const verifyOtp = async (req: Request, res: Response) => {
     const otpRecord = await prisma.otpVerification.findFirst({
       where: {
         userId: user.id,
-        purpose: "REGISTRATION",
         usedAt: null, // Not yet used
         expiresAt: {
           gt: new Date(), // Not expired
@@ -235,7 +233,12 @@ export const verifyOtp = async (req: Request, res: Response) => {
         usedAt: new Date(),
       },
     });
-    await prisma.profile.update({ where: { userId: user.id }, data: { isVerified: true } });
+    await prisma.profile.create({
+  data: {
+    userId: user.id,
+    isVerified: true,
+  },
+  });
     // Fetch the user to return with the token
     const fullUser = await prisma.user.findUnique({
       where: { id: user.id, deletedAt: null },

@@ -1,33 +1,49 @@
 ﻿import axios from "axios";
 
 const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000",
+  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
+  // Essential for CORS with cookies/sessions across origins
+  withCredentials: true,
+  timeout: 10000, // 10s timeout to prevent hanging requests
 });
 
-apiClient.interceptors.request.use((config) => {
-  if (typeof window !== "undefined") {
-    const token = window.localStorage.getItem("flameiq_token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+// Request Interceptor
+apiClient.interceptors.request.use(
+  (config) => {
+    // Only access localStorage on the client side
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("flameiq_token");
+      if (token) {
+        // Axios v1+ header assignment syntax
+        config.headers.set("Authorization", `Bearer ${token}`);
+      }
     }
-  }
-  return config;
-});
-
-/*apiClient.interceptors.response.use(
-  (response) => {
-    // Store the response in session storage
-    sessionStorage.setItem("backendResponse", JSON.stringify(response.data));
-    return response;
+    return config;
   },
+  (error) => Promise.reject(error)
+);
+
+// Response Interceptor
+apiClient.interceptors.response.use(
+  (response) => response.data, // Unwraps response so you get `data` directly
   (error) => {
-    // Clear the session storage in case of an error
-    sessionStorage.removeItem("backendResponse");
-    throw error;
+    const status = error.response?.status;
+
+    if (status === 401 && typeof window !== "undefined") {
+      // Clear token and redirect on unauthorized access
+      localStorage.removeItem("flameiq_token");
+      window.location.href = "/login";
+    }
+
+    return Promise.reject({
+      message: error.response?.data?.message || "An unexpected error occurred",
+      status: status,
+      raw: error,
+    });
   }
-);*/
+);
 
 export default apiClient;

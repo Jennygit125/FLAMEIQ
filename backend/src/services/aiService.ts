@@ -92,7 +92,7 @@ class AIService {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(input),
+        body: JSON.parse(JSON.stringify(input)),
       });
 
       if (!response.ok) {

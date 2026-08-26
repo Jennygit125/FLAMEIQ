@@ -40,8 +40,7 @@ const route = Router();
  *       201:
  *         description: User created successfully
  */
-route.post('/api/auth/signup', authLimiter, signUp)
-
+route.post('/api/auth/signup', authLimiter, signUp);
 /**
  * @swagger
  * /api/auth/verify-otp:
@@ -64,8 +63,7 @@ route.post('/api/auth/signup', authLimiter, signUp)
  *         description: Account verified successfully, returns JWT
  */
 route.post('/api/auth/verify-otp', authLimiter, verifyOtp);
-
-route.post('/api/auth/resendOtp', authLimiter, resendOtp)
+route.post('/api/auth/resendOtp', authLimiter, resendOtp);
 /**
  * @swagger
  * /api/auth/signin:
@@ -89,9 +87,8 @@ route.post('/api/auth/resendOtp', authLimiter, resendOtp)
  *       401:
  *         description: Invalid email or password
  */
-route.post('/api/auth/signin', authLimiter, signIn)
-route.post('/api/auth/login', authLimiter, signIn)
-
+route.post('/api/auth/signin', authLimiter, signIn);
+route.post('/api/auth/login', authLimiter, signIn);
 /**
  * @swagger
  * /api/auth/forgot-password:
@@ -112,7 +109,6 @@ route.post('/api/auth/login', authLimiter, signIn)
  *         description: A confirmation message is sent
  */
 route.post('/api/auth/forgot-password', authLimiter, forgotPassword);
-
 /**
  * @swagger
  * /api/auth/reset-password:
@@ -137,7 +133,6 @@ route.post('/api/auth/forgot-password', authLimiter, forgotPassword);
  *         description: Password has been reset successfully
  */
 route.post('/api/auth/reset-password', authLimiter, resetPassword);
-
 /**
  * @swagger
  * /api/auth/profile:
@@ -158,9 +153,8 @@ route.post('/api/auth/reset-password', authLimiter, resetPassword);
  *       200:
  *         description: Profile updated successfully
  */
-route.put('/api/auth/profile', authenticate, updateProfile)
-route.patch('/api/auth/profile', authenticate, updateProfile)
-
+route.put('/api/auth/profile', authenticate, updateProfile);
+route.patch('/api/auth/profile', authenticate, updateProfile);
 /**
  * @swagger
  * /api/auth/profile/picture:
@@ -186,7 +180,6 @@ route.patch('/api/auth/profile', authenticate, updateProfile)
  *         description: No file uploaded.
  */
 route.post('/api/auth/profile/picture', authenticate, upload.single('profileImage'), uploadProfilePicture);
-
 /**
  * @swagger
  * /api/auth/me:
@@ -215,9 +208,7 @@ route.get('/api/auth/me', authenticate, getMe);
  *         description: Account soft-deleted successfully
  */
 route.delete('/api/auth/me', authenticate, deleteSelf);
-
 // --- Admin & User Management Routes ---
-
 /**
  * @swagger
  * /api/users:
@@ -255,7 +246,6 @@ route.delete('/api/auth/me', authenticate, deleteSelf);
  *         description: A paginated list of users with profile data.
  */
 route.get('/api/users', authenticate, authorizeAdmin, getUsers);
-
 /**
  * @swagger
  * /api/profit:
@@ -267,9 +257,7 @@ route.get('/api/users', authenticate, authorizeAdmin, getUsers);
  *       200:
  *         description: Total profit.
  */
-route.get('/api/profit', authenticate, authorizeAdmin, getTotalProfit)
-
-
+route.get('/api/profit', authenticate, authorizeAdmin, getTotalProfit);
 /**
  * @swagger
  * /api/users/{id}:
@@ -283,7 +271,6 @@ route.get('/api/profit', authenticate, authorizeAdmin, getTotalProfit)
  *         description: User soft-deleted successfully
  */
 route.delete('/api/users/:id', authenticate, authorizeAdmin, deleteUsers);
-
 /**
  * @swagger
  * /api/users/{id}/flag:
@@ -320,7 +307,6 @@ route.delete('/api/users/:id', authenticate, authorizeAdmin, deleteUsers);
  *         description: Vendor not found.
  */
 route.patch('/api/users/:id/flag', authenticate, authorizeAdmin, flagVendor);
-
 /**
  * @swagger
  * /api/admin/profit:
@@ -333,10 +319,8 @@ route.patch('/api/users/:id/flag', authenticate, authorizeAdmin, flagVendor);
  *       200:
  *         description: Platform total profit calculated from successful payments
  */
-//app.get('/api/admin/profit', authenticate, authorizeAdmin, getTotalProfit);
-
+route.get('/api/admin/profit', authenticate, authorizeAdmin, getTotalProfit);
 // NOTE: SSE notification stream is registered below alongside payment routes (authenticated, per-user)
-
 // --- Order Routes ---
 /**
  * @swagger
@@ -544,7 +528,6 @@ route.patch('/api/users/:id/flag', authenticate, authorizeAdmin, flagVendor);
  *         description: Server error.
  */
 route.use('/api/orders', orderRoutes);
-
 // --- Cylinder Routes ---
 /**
  * @swagger
@@ -626,7 +609,6 @@ route.use('/api/orders', orderRoutes);
  *         description: Server error.
  */
 route.use('/api/cylinders', cylinderRoutes);
-
 // --- Review Routes ---
 /**
  * @swagger
