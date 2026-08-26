@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import Cookies from 'js-cookie';
+import apiClient from '@/services/apiClient'; // Path to your apiClient
 
 export interface UserProfile {
   id: string;
@@ -35,28 +36,29 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const TOKEN_KEY = 'flameiq_token';
+
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Declare logout first
   const logout = useCallback(() => {
     setToken(null);
     setUser(null);
-    Cookies.remove('token');
+    Cookies.remove(TOKEN_KEY);
+    localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem('user');
   }, []);
 
-  // Declare login
   const login = useCallback((newToken: string, newUser: User) => {
     setToken(newToken);
     setUser(newUser);
-    Cookies.set('token', newToken, { expires: 7, path: '/' });
+    Cookies.set(TOKEN_KEY, newToken, { expires: 7, path: '/' });
+    localStorage.setItem(TOKEN_KEY, newToken);
     localStorage.setItem('user', JSON.stringify(newUser));
   }, []);
 
-  // Declare updateUser
   const updateUser = useCallback((updatedUser: Partial<User>) => {
     setUser((prev) => {
       if (!prev) return null;
@@ -66,34 +68,40 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
   }, []);
 
-  // Use effect safely references logout
   useEffect(() => {
-    const savedToken = Cookies.get('token');
+    const activeToken = Cookies.get(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY);
     const savedUser = localStorage.getItem('user');
 
-    if (savedToken && savedUser) {
-      setToken(savedToken);
-      setUser(JSON.parse(savedUser));
-
-      fetch(`${process.env.NEXT_PUBLIC_API_URL}/me`, {
-        headers: { Authorization: `Bearer ${savedToken}` },
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.success) {
-            setUser(data.data);
-            localStorage.setItem('user', JSON.stringify(data.data));
-          } else {
-            logout();
-          }
-        })
-        .catch(() => {
-          // Keep cached state on network connectivity failure
-        })
-        .finally(() => setIsLoading(false));
-    } else {
+    if (!activeToken) {
       setIsLoading(false);
+      return;
     }
+
+    setToken(activeToken);
+
+    if (savedUser) {
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch (err) {
+        console.error('Failed to parse cached user', err);
+      }
+    }
+
+    // Use apiClient instead of fetch
+    apiClient
+      .get<{ success: boolean; data: User }>('/me')
+      .then((res: any) => {
+        if (res.success) {
+          setUser(res.data);
+          localStorage.setItem('user', JSON.stringify(res.data));
+        } else {
+          logout();
+        }
+      })
+      .catch(() => {
+        // Keep cached state on network failure
+      })
+      .finally(() => setIsLoading(false));
   }, [logout]);
 
   return (
@@ -103,13 +111,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-/**
- * useAuth hook
- * @returns {Object} with user, token, isLoading, login, logout, and updateUser
- * @throws {Error} if useAuth is called outside of an AuthProvider
- * @example
- * const { user, token, isLoading, login, logout, updateUser } = useAuth();
- */
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
