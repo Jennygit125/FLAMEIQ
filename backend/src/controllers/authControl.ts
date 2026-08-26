@@ -234,7 +234,12 @@ export const verifyOtp = async (req: Request, res: Response) => {
         usedAt: new Date(),
       },
     });
-    await prisma.profile.update({ where: { userId: user.id }, data: { isVerified: true } });
+    await prisma.profile.create({
+  data: {
+    userId: user.id,
+    isVerified: true,
+  },
+  });
     // Fetch the user to return with the token
     const fullUser = await prisma.user.findUnique({
       where: { id: user.id, deletedAt: null },
