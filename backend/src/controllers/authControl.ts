@@ -3,8 +3,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { prisma } from "@/db/prisma.js";
 import * as adminService from '@/services/adminService.js'
-import { logger } from '@/utils/logger.js'; //import { UnauthorizedError, AppError } from '@/utils/errors.js';
-//import { UnauthorizedError, AppError } from '@/utils/errors.js';
+import { logger } from '@/utils/logger.js'; 
 import { generateOtp, getOtpExpiration, hashOtp } from "@/utils/otp.js";
 import { emailService } from "../services/emailService.js";
 //import { uploadToCloudinary } from "../utils/upload";
