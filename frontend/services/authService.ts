@@ -46,3 +46,6 @@ export const updateProfile = (payload: {
   address?: string;
   isVendor?: boolean;
 }) => apiClient.patch("/auth/profile", payload);
+
+// Confirmed live: DELETE /api/auth/me
+export const deleteAccount = () => apiClient.delete("/auth/me");
