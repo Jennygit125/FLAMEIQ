@@ -1,36 +1,48 @@
-# ---- Base ----
-FROM node:22-alpine AS base
+# Builder stage
+FROM node:26-alpine AS builder
+WORKDIR /build
+
+# Install corepack for pnpm
+RUN npm install -g corepack && corepack enable pnpm
+
+# Copy lockfile first for better layer caching
+COPY pnpm-lock.yaml package.json ./
+
+# Install all dependencies (prod + dev)
+RUN pnpm install --frozen-lockfile
+
+# Copy source and build
+COPY tsconfig.json ./
+COPY src ./src
+COPY prisma ./prisma
+
+# Build TypeScript and generate Prisma client
+RUN pnpm build && pnpm prisma:generate
+
+# Runtime stage
+FROM node:26-alpine
 WORKDIR /app
-RUN corepack enable
 
-# ---- Dependencies ----
-FROM base AS deps
-COPY package.json pnpm-lock.yaml ./
-# Install all dependencies (postinstall scripts like prisma generate need dev deps)
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
+# Install corepack for pnpm
+RUN npm install -g corepack && corepack enable pnpm
 
-# ---- Builder ----
-FROM base AS builder
-COPY . .
-# Copy all node_modules from deps stage
-COPY --from=deps /app/node_modules ./node_modules
-RUN pnpm run build
-
-# ---- Runner ----
-FROM base AS runner
-
-# Copy production dependencies only
-COPY package.json pnpm-lock.yaml ./
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --frozen-lockfile
-
-# Copy built application
-COPY --from=builder /app/dist ./dist
-
-# Copy Prisma schema for runtime access
-COPY --from=builder /app/prisma ./prisma
-
+# Set production environment
 ENV NODE_ENV=production
+
+# Copy package files
+COPY package.json pnpm-lock.yaml ./
+
+# Install only production dependencies
+RUN pnpm install --frozen-lockfile --prod && pnpm prisma:generate
+
+# Copy built artifacts from builder
+COPY --from=builder /build/dist ./dist
+COPY --from=builder /build/node_modules/.prisma ./node_modules/.prisma
 
 EXPOSE 3000
 
-CMD ["pnpm", "run", "dev"]
+# Healthcheck for container orchestration
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
+
+CMD ["node", "dist/server.js"]

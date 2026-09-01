@@ -49,3 +49,20 @@ export const createReview = async (req: Request, res: Response) => {
     return res.status(500).json({ success: false, message: 'Failed to create review.' });
   }
 };
+export const getReview = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const review = await prisma.review.findUnique({ where: { id } });
+    if (!review) {
+      return res.status(404).json({ success: false, message: 'Review not found.' });
+    }
+    return res.status(200).json({ success: true, data: review });
+  } catch (error) {
+    logger.error({ err: error }, 'Failed to get review');
+    return res.status(500).json({ success: false, message: 'Failed to retrieve review.' });
+  }
+}
+export const getallReview = async (req: Request, res: Response) => {
+  const allReview = await prisma.review.findMany();
+  return res.status(200).json({ success: true, data: allReview });
+};

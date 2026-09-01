@@ -1,10 +1,9 @@
-import './types/express.d.js';
 import express from 'express'
 import dotenv from 'dotenv'
 import { corsConfig } from './middleware/corsConfig.js';
 import { config } from './config/index.js';
 import { fileURLToPath } from 'url'
-import multer from 'multer';
+//import multer from 'multer';
 import route from './routes/routes.js';
 import { predictionJob } from './jobs/predictionJob.js';
 import { payoutJob } from './jobs/payoutJob.js';
@@ -29,8 +28,8 @@ app.use(httpLogger)
 app.use(generalLimiter);
 
 // Multer setup for in-memory file storage
-const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
+//const storage = multer.memoryStorage();
+//const upload = multer({ storage: storage });
 
 setupSwagger(app)
 
