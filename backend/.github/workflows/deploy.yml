@@ -46,7 +46,7 @@ jobs:
       - name: Health check
         run: |
           for i in {1..30}; do
-            if curl -f http://${{ secrets.DEPLOY_HOST }}:4000 > /dev/null 2>&1; then
+            if curl -f http://${{ secrets.DEPLOY_HOST }}:3000 > /dev/null 2>&1; then
               echo "✓ Health check passed"
               exit 0
             fi
