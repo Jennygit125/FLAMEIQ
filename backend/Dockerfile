@@ -1,48 +1,48 @@
-# Builder stage
-FROM node:26-alpine AS builder
-WORKDIR /build
+# --- Base Stage ---
+FROM node:24.20-slim AS base
 
-# Install corepack for pnpm
-RUN npm install -g corepack && corepack enable pnpm
+# Configure pnpm home directory and update PATH
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
 
-# Copy lockfile first for better layer caching
-COPY pnpm-lock.yaml package.json ./
+# Install pnpm globally using npm (recommended for Node 24+)
+RUN npm install -g pnpm@latest
 
-# Install all dependencies (prod + dev)
-RUN pnpm install --frozen-lockfile
-
-# Copy source and build
-COPY tsconfig.json ./
-COPY src ./src
-COPY prisma ./prisma
-
-# Build TypeScript and generate Prisma client
-RUN pnpm build && pnpm prisma:generate
-
-# Runtime stage
-FROM node:26-alpine
 WORKDIR /app
 
-# Install corepack for pnpm
-RUN npm install -g corepack && corepack enable pnpm
+# --- Dependencies Stage ---
+FROM base AS dependencies
 
-# Set production environment
+# Copy package configuration files
+COPY package.json pnpm-lock.yaml* ./
+
+# Install all dependencies using BuildKit caching
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm install --frozen-lockfile --ignore-scripts
+
+# --- Build Stage ---
+FROM dependencies AS build
+
+# Copy remaining source code and build the project
+COPY . .
+RUN pnpm run build
+
+# --- Production Stage ---
+FROM base AS production
+
 ENV NODE_ENV=production
 
-# Copy package files
-COPY package.json pnpm-lock.yaml ./
+# Copy package.json and pnpm-lock.yaml
+COPY package.json pnpm-lock.yaml* ./
 
-# Install only production dependencies
-RUN pnpm install --frozen-lockfile --prod && pnpm prisma:generate
+# Install all dependencies (tsx needed for runtime)
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm install --frozen-lockfile --ignore-scripts
 
-# Copy built artifacts from builder
-COPY --from=builder /build/dist ./dist
-COPY --from=builder /build/node_modules/.prisma ./node_modules/.prisma
+# Copy source and tsconfig for tsx runtime resolution
+COPY --from=build /app/src ./src
+COPY --from=build /app/tsconfig.json ./
 
 EXPOSE 3000
 
-# Healthcheck for container orchestration
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
-
-CMD ["node", "dist/server.js"]
+CMD [ "pnpm", "exec", "tsx", "src/server.ts" ]
