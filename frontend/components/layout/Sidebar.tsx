@@ -2,7 +2,7 @@
 
 //import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -57,6 +57,7 @@ export default function Sidebar({
 }) {
   const items = NAV_ITEMS[portal];
   const pathname = usePathname();
+  const router = useRouter();
   const { logout } = useAuth();
  // const [lightMode, setLightMode] = useState(true);
 
@@ -122,7 +123,13 @@ export default function Sidebar({
         </div>
 
         <div className="mt-auto flex flex-col gap-1 border-t border-border pt-3">
-          <button onClick={logout} className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-ink-500 hover:bg-brand-50">
+          <button
+            onClick={() => {
+              logout();
+              router.push("/login");
+            }}
+            className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-ink-500 hover:bg-brand-50"
+          >
             <LogOut size={17} className="text-muted-500" />
             Log Out
           </button>

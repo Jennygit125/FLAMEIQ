@@ -2,28 +2,11 @@
 
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import {
-  BriefcaseBusiness,
-  ChevronRight,
-  CircleHelp,
-  FileText,
-  ImagePlus,
-  LogOut,
-  MapPin,
-  Pencil,
-  Phone,
-  Star,
-  Trash2,
-  UserRound,
-} from "lucide-react";
+import { ChevronRight, MapPin, Pencil, Phone, UserRound } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { updateProfile } from "@/services/authService";
-
-type ProfileVariant = "customer" | "vendor";
-
-interface ProfilePageProps {
-  variant: ProfileVariant;
-}
+import SettingsNav from "@/components/settings/SettingsNav";
+import type { Portal } from "@/types/portal";
 
 interface FormValues {
   firstName: string;
@@ -35,12 +18,6 @@ interface FormValues {
   lga: string;
   country: string;
   dateOfBirth: string;
-  businessName: string;
-  contact: string;
-  businessAddress: string;
-  openingHours: string;
-  ninCac: string;
-  areas: string;
 }
 
 const defaultFormValues: FormValues = {
@@ -53,51 +30,45 @@ const defaultFormValues: FormValues = {
   lga: "",
   country: "Nigeria",
   dateOfBirth: "",
-  businessName: "",
-  contact: "",
-  businessAddress: "",
-  openingHours: "",
-  ninCac: "",
-  areas: "",
 };
 
-const cylinderOptions = ["3 kg", "6 kg", "12 kg", "12.5 kg", "25 kg", "50 kg"];
+function splitName(fullName: string): Pick<FormValues, "firstName" | "middleName" | "lastName"> {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return { firstName: "", middleName: "", lastName: "" };
+  if (parts.length === 1) return { firstName: parts[0], middleName: "", lastName: "" };
+  return {
+    firstName: parts[0],
+    middleName: parts.slice(1, -1).join(" "),
+    lastName: parts[parts.length - 1],
+  };
+}
 
-export default function ProfilePage({ variant }: ProfilePageProps) {
-  const { user, logout } = useAuth();
-  const isVendor = variant === "vendor" || user?.role === "VENDOR";
+export default function ProfilePage({ variant }: { variant: Portal }) {
+  const { user } = useAuth();
+  const isVendor = variant === "vendor";
 
   const [values, setValues] = useState<FormValues>(defaultFormValues);
   const [photo, setPhoto] = useState<string | null>(null);
-  const [selectedCylinders, setSelectedCylinders] = useState<string[]>(["12.5 kg"]);
-  const [deliveryMode, setDeliveryMode] = useState("Multiple Choice");
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
 
-  // Sync user context data into form values when user context loads/changes
+  // AuthContext already fetches the full user (incl. profile) on load —
+  // just mirror it into local editable form state here.
   useEffect(() => {
-    if (user) {
-      const nameParts = (user.name || "").trim().split(" ");
-      const firstName = nameParts[0] || "";
-      const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : "";
-      const middleName = nameParts.length > 2 ? nameParts.slice(1, -1).join(" ") : "";
-
-      setValues((prev) => ({
-        ...prev,
-        firstName: firstName || prev.firstName,
-        middleName: middleName || prev.middleName,
-        lastName: lastName || prev.lastName,
-        email: user.email || prev.email,
-        phone: user.phone || prev.phone,
-        address: user.address || prev.address,
-        businessName: (user as any).businessName || prev.businessName,
-        businessAddress: (user as any).businessAddress || prev.businessAddress,
-      }));
-
-      if (user.avatar) {
-        setPhoto(user.avatar);
-      }
+    if (!user) return;
+    const { firstName, middleName, lastName } = splitName(user.name || "");
+    setValues((prev) => ({
+      ...prev,
+      firstName,
+      middleName,
+      lastName,
+      email: user.email || prev.email,
+      phone: user.profile?.phone || user.phone || prev.phone,
+      address: user.profile?.address || user.address || prev.address,
+    }));
+    if (user.profile?.profilePic || user.avatar) {
+      setPhoto(user.profile?.profilePic || user.avatar || null);
     }
   }, [user]);
 
@@ -107,14 +78,17 @@ export default function ProfilePage({ variant }: ProfilePageProps) {
     return `${f}${l}`.toUpperCase();
   }, [values.firstName, values.lastName, user?.name]);
 
-  const updateValue = (field: keyof FormValues) => (event: ChangeEvent<HTMLInputElement>) => {
-    setValues((current) => ({ ...current, [field]: event.target.value }));
-    setSaved(false);
-  };
+  const updateValue =
+    (field: keyof FormValues) => (event: ChangeEvent<HTMLInputElement>) => {
+      setValues((current) => ({ ...current, [field]: event.target.value }));
+      setSaved(false);
+    };
 
   const handlePhoto = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) setPhoto(URL.createObjectURL(file));
+    // TODO: wire to a real profile-picture upload endpoint once one is
+    // confirmed on the backend — preview-only for now.
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -122,115 +96,122 @@ export default function ProfilePage({ variant }: ProfilePageProps) {
     setSaving(true);
     setSaved(false);
     setSaveError("");
-
     try {
-      await updateProfile(
-        isVendor
-          ? {
-              businessName: values.businessName,
-              phone: values.contact || values.phone,
-              address: values.businessAddress || values.address,
-              isVendor: true,
-            }
-          : {
-              phone: values.phone,
-              address: values.address,
-              isVendor: false,
-            },
-      );
+      // Only phone/address are persisted by PATCH /auth/profile for a
+      // personal (non-vendor) profile today — name/LGA/Country/DOB have
+      // no backend field yet, so they stay editable here without erroring.
+      await updateProfile({
+        phone: values.phone,
+        address: values.address,
+        isVendor,
+      });
       setSaved(true);
-    } catch (error) {
-      setSaveError(error instanceof Error ? error.message : "Unable to update profile");
+    } catch (error: any) {
+      setSaveError(error?.message ?? "Unable to update profile");
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <div className="min-h-full overflow-y-auto bg-white px-5 py-6 text-[#252943] sm:px-8 lg:px-12">
-      <div className="mx-auto max-w-[1060px]">
-        <div className="mb-9 flex items-center gap-3 text-xs text-[#777b8b]">
-          <span>Settings</span>
-          <ChevronRight size={14} />
-          <span className="font-medium text-[#252943]">Profile</span>
+    <div className="text-ink-500">
+      <nav className="mb-6 flex items-center gap-1.5 text-xs text-muted-500">
+        <Link href={`/${variant}/settings`} className="hover:text-ink-500">
+          Settings
+        </Link>
+        <ChevronRight size={12} />
+        <span className="text-ink-500">Profile</span>
+      </nav>
+
+      {/* Profile card */}
+      <section className="mx-auto mb-8 w-full max-w-md rounded-xl border border-border bg-card px-6 py-6 text-center">
+        <div className="relative mx-auto mb-4 h-20 w-20">
+          {photo ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={photo}
+              alt="Profile"
+              className="h-full w-full rounded-full border-2 border-success object-cover"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center rounded-full border-2 border-success bg-brand-500 text-xl font-bold tracking-wide text-white">
+              {initials}
+            </div>
+          )}
         </div>
 
-        <section className="mx-auto mb-11 w-full max-w-[430px] rounded-xl border border-[#e2e3e7] bg-white px-6 py-6 text-center shadow-[0_2px_8px_rgba(35,39,64,0.06)]">
-          <div className="relative mx-auto mb-4 h-[78px] w-[78px]">
-            {photo ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={photo} alt="Profile" className="h-full w-full rounded-full border-4 border-[#50c878] object-cover" />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center rounded-full border-4 border-[#50c878] bg-[#22547d] text-2xl tracking-wider text-white">
-                {initials}
-              </div>
-            )}
-          </div>
-          <h1 className="text-[22px] font-bold leading-7">
-            {values.firstName || values.lastName ? `${values.firstName} ${values.lastName}`.trim() : user?.name || "User"}
-          </h1>
-          <p className="mt-1 text-sm text-[#252943]">{values.email || user?.email}</p>
-          <div className="mx-auto mt-7 flex w-fit items-center gap-2 rounded-full bg-[#2676aa] px-5 py-2.5 text-sm font-medium text-white">
-            <UserRound size={16} />
-            {isVendor ? "Vendor" : "Customer"}
-          </div>
-          <label className="mx-auto mt-7 flex w-fit cursor-pointer items-center gap-2 rounded-md border border-[#dedfe4] px-5 py-2 text-xs text-[#55596a] hover:bg-slate-50">
-            <Pencil size={13} />
-            Change Photo
-            <input type="file" accept="image/*" className="hidden" onChange={handlePhoto} />
-          </label>
-        </section>
+        <h1 className="text-lg font-bold">
+          {values.firstName || values.lastName
+            ? `${values.firstName} ${values.lastName}`.trim()
+            : user?.name || "User"}
+        </h1>
+        <p className="mt-0.5 text-sm text-muted-500">{values.email || user?.email}</p>
 
-        <div className="grid gap-12 lg:grid-cols-[280px_minmax(0,1fr)]">
-          <aside className="text-xs">
-            <p className="mb-3 font-medium text-[#4d5161]">Personal</p>
-            <div className="overflow-hidden rounded-lg border border-[#e0e2e7]">
-              <div className="flex items-center justify-between bg-[#225b84] px-3 py-3 text-white">
-                <span className="flex items-center gap-2"><UserRound size={14} /> Personal Information</span>
-                <ChevronRight size={14} />
-              </div>
-              {isVendor && <SettingsItem icon={<BriefcaseBusiness size={14} />} label="Business Information" />}
-              {isVendor && <SettingsItem icon={<FileText size={14} />} label="My Documents" />}
-            </div>
+        <div className="mx-auto mt-4 flex w-fit items-center gap-1.5 rounded-full bg-brand-500 px-4 py-1.5 text-xs font-semibold text-white">
+          <UserRound size={13} />
+          {isVendor ? "Vendor" : "Customer"}
+        </div>
 
-            <p className="mb-3 mt-8 font-medium text-[#4d5161]">Legal &amp; Compliance</p>
-            <div className="space-y-1">
-              <SettingsItem label="Terms Of Service" />
-              <SettingsItem label="Privacy Policy" />
-              <SettingsItem label="About Us" />
-            </div>
+        <label className="mx-auto mt-4 flex w-fit cursor-pointer items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-xs font-medium text-ink-500 hover:bg-muted-50">
+          Change Photo
+          <Pencil size={12} />
+          <input type="file" accept="image/*" className="hidden" onChange={handlePhoto} />
+        </label>
+      </section>
 
-            <p className="mb-3 mt-8 font-medium text-[#4d5161]">Account Centre</p>
-            <div className="space-y-1">
-              <SettingsItem icon={<CircleHelp size={14} />} label="Contact Us" />
-              <SettingsItem icon={<CircleHelp size={14} />} label="FAQ" />
-              {!isVendor && <SettingsItem icon={<Star size={14} />} label="Reviews & Ratings" />}
-              <SettingsItem danger icon={<LogOut size={14} />} label="Log Out" onClick={logout} />
-              <SettingsItem danger icon={<Trash2 size={14} />} label="Delete Account" />
-            </div>
-          </aside>
+      {/* Nav + form */}
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+        <aside className="w-full rounded-2xl border border-border bg-card p-5 lg:w-72 lg:shrink-0">
+          <SettingsNav portal={variant} />
+        </aside>
 
-          <form onSubmit={handleSubmit} className="min-w-0">
-            <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-full bg-[#fff4e8] text-[#252943]">
-              <UserRound size={18} />
-            </div>
-            {isVendor ? (
-              <VendorFields
-                values={values}
-                updateValue={updateValue}
-                selectedCylinders={selectedCylinders}
-                setSelectedCylinders={setSelectedCylinders}
-                deliveryMode={deliveryMode}
-                setDeliveryMode={setDeliveryMode}
+        <div className="flex-1 rounded-2xl border border-border bg-card p-6">
+          <span className="mb-5 flex h-11 w-11 items-center justify-center rounded-full bg-notify-50 text-ink-500">
+            <UserRound size={18} />
+          </span>
+
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field label="First Name:" value={values.firstName} onChange={updateValue("firstName")} />
+              <Field label="Middle Name:" value={values.middleName} onChange={updateValue("middleName")} />
+              <Field label="Last Name:" value={values.lastName} onChange={updateValue("lastName")} />
+              <Field label="Email" value={values.email} onChange={updateValue("email")} disabled />
+              <Field
+                label="Phone Number"
+                value={values.phone}
+                onChange={updateValue("phone")}
+                icon={<Phone size={14} />}
               />
-            ) : (
-              <CustomerFields values={values} updateValue={updateValue} />
-            )}
-            <div className="mt-10 flex items-center justify-end gap-4">
-              {saved && <span className="text-xs text-emerald-600">Profile updated</span>}
-              {saveError && <span className="text-xs text-red-600">{saveError}</span>}
-              <button type="submit" disabled={saving} className="rounded-md bg-[#225b84] px-12 py-3 text-xs font-medium text-white transition hover:bg-[#174867] disabled:cursor-not-allowed disabled:opacity-60">
-                {saving ? "Updating..." : "Update"}
+              <Field
+                label={isVendor ? "Address" : "Primary Address"}
+                value={values.address}
+                onChange={updateValue("address")}
+                icon={<MapPin size={14} />}
+              />
+              <Field label="LGA" value={values.lga} onChange={updateValue("lga")} icon={<MapPin size={14} />} />
+              <Field
+                label="Country"
+                value={values.country}
+                onChange={updateValue("country")}
+                icon={<MapPin size={14} />}
+              />
+              <Field
+                label="Date Of Birth"
+                value={values.dateOfBirth}
+                onChange={updateValue("dateOfBirth")}
+                placeholder="dd/mm/yyyy"
+              />
+            </div>
+
+            <div className="mt-2 flex flex-wrap items-center justify-end gap-4">
+              {saved && <span className="text-xs font-medium text-success">Profile updated</span>}
+              {saveError && <span className="text-xs font-medium text-error">{saveError}</span>}
+              <button
+                type="submit"
+                disabled={saving}
+                className="rounded-lg bg-brand-500 px-8 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {saving ? "Updating…" : "Update"}
               </button>
             </div>
           </form>
@@ -240,139 +221,40 @@ export default function ProfilePage({ variant }: ProfilePageProps) {
   );
 }
 
-function SettingsItem({
-  label,
-  icon,
-  danger = false,
-  onClick,
-  href = "#",
-}: {
-  label: string;
-  icon?: React.ReactNode;
-  danger?: boolean;
-  onClick?: () => void;
-  href?: string;
-}) {
-  const content = (
-    <span className="flex w-full items-center justify-between">
-      <span className="flex items-center gap-2">{icon}{label}</span>
-      <ChevronRight size={13} />
-    </span>
-  );
-
-  const className = `flex w-full items-center justify-between rounded-md px-2 py-2.5 text-left ${
-    danger ? "text-[#d95464]" : "text-[#626677]"
-  } hover:bg-slate-50 transition-colors`;
-
-  if (onClick) {
-    return (
-      <button type="button" onClick={onClick} className={className}>
-        {content}
-      </button>
-    );
-  }
-
-  return (
-    <Link href={href} className={className}>
-      {content}
-    </Link>
-  );
-}
-
 function Field({
   label,
   value,
   onChange,
   placeholder,
   icon,
+  disabled = false,
 }: {
   label: string;
   value: string;
   onChange: (event: ChangeEvent<HTMLInputElement>) => void;
   placeholder?: string;
   icon?: React.ReactNode;
+  disabled?: boolean;
 }) {
   return (
     <label className="block">
-      <span className="mb-2 block text-[11px] text-[#303447]">{label}</span>
+      <span className="mb-1.5 block text-sm font-medium text-ink-500">{label}</span>
       <span className="relative block">
-        {icon && <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7c8190]">{icon}</span>}
-        <input value={value} onChange={onChange} placeholder={placeholder} className={`h-10 w-full rounded-md border border-[#e4e5e9] bg-white px-3 text-xs text-[#303447] outline-none transition focus:border-[#2676aa] ${icon ? "pl-8" : ""}`} />
+        {icon && (
+          <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-400">
+            {icon}
+          </span>
+        )}
+        <input
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          disabled={disabled}
+          className={`w-full rounded-lg border border-border bg-white px-3.5 py-2.5 text-sm text-ink-500 outline-none placeholder:text-muted-400 focus:border-brand-500 ${
+            icon ? "pl-9" : ""
+          } ${disabled ? "cursor-not-allowed bg-muted-50/60 text-muted-500" : ""}`}
+        />
       </span>
     </label>
-  );
-}
-
-function CustomerFields({ values, updateValue }: { values: FormValues; updateValue: (field: keyof FormValues) => (event: ChangeEvent<HTMLInputElement>) => void }) {
-  return (
-    <div className="grid gap-4 sm:grid-cols-2">
-      <Field label="First Name:" value={values.firstName} onChange={updateValue("firstName")} placeholder="First Name" />
-      <Field label="Middle Name:" value={values.middleName} onChange={updateValue("middleName")} placeholder="Middle Name" />
-      <Field label="Last Name:" value={values.lastName} onChange={updateValue("lastName")} placeholder="Last Name" />
-      <Field label="Email" value={values.email} onChange={updateValue("email")} placeholder="Email Address" />
-      <Field label="Phone Number" value={values.phone} onChange={updateValue("phone")} placeholder="Phone Number" icon={<Phone size={13} />} />
-      <Field label="Primary Address" value={values.address} onChange={updateValue("address")} placeholder="Home Address" icon={<MapPin size={13} />} />
-      <Field label="LGA" value={values.lga} onChange={updateValue("lga")} placeholder="LGA" icon={<MapPin size={13} />} />
-      <Field label="Country" value={values.country} onChange={updateValue("country")} placeholder="Country" icon={<MapPin size={13} />} />
-      <Field label="Date Of Birth" value={values.dateOfBirth} onChange={updateValue("dateOfBirth")} placeholder="DD / MM / YYYY" />
-    </div>
-  );
-}
-
-function VendorFields({
-  values,
-  updateValue,
-  selectedCylinders,
-  setSelectedCylinders,
-  deliveryMode,
-  setDeliveryMode,
-}: {
-  values: FormValues;
-  updateValue: (field: keyof FormValues) => (event: ChangeEvent<HTMLInputElement>) => void;
-  selectedCylinders: string[];
-  setSelectedCylinders: (values: string[]) => void;
-  deliveryMode: string;
-  setDeliveryMode: (value: string) => void;
-}) {
-  return (
-    <div className="space-y-4">
-      <Field label="Business Name:" value={values.businessName} onChange={updateValue("businessName")} placeholder="Enter Your Business Name" />
-      <Field label="Mode Of Contact" value={values.contact} onChange={updateValue("contact")} placeholder="Phone Number/Email" />
-      <Field label="Business Address:" value={values.businessAddress} onChange={updateValue("businessAddress")} placeholder="Enter Your Business Address" />
-      <Field label="LGA" value={values.lga} onChange={updateValue("lga")} placeholder="LGA" />
-      <Field label="Opening Hours" value={values.openingHours} onChange={updateValue("openingHours")} placeholder="e.g. 8:00 AM - 6:00 PM" />
-      <Field label="NIN / CAC Number" value={values.ninCac} onChange={updateValue("ninCac")} placeholder="ID Number" />
-      <div>
-        <span className="mb-2 block text-[11px] text-[#303447]">Available Cylinder</span>
-        <div className="flex flex-wrap gap-2 rounded-md border border-[#e4e5e9] p-2">
-          {cylinderOptions.map((cylinder) => {
-            const selected = selectedCylinders.includes(cylinder);
-            return (
-              <button type="button" key={cylinder} onClick={() => setSelectedCylinders(selected ? selectedCylinders.filter((item) => item !== cylinder) : [...selectedCylinders, cylinder])} className={`rounded-md px-3 py-2 text-xs ${selected ? "bg-[#225b84] text-white" : "bg-slate-50 text-[#626677]"}`}>
-                {cylinder}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-      <label className="block">
-        <span className="mb-2 block text-[11px] text-[#303447]">Mode Of Delivery</span>
-        <select value={deliveryMode} onChange={(event) => setDeliveryMode(event.target.value)} className="h-10 w-full rounded-md border border-[#e4e5e9] bg-white px-3 text-xs text-[#626677] outline-none focus:border-[#2676aa]">
-          <option>Multiple Choice</option>
-          <option>Home Delivery</option>
-          <option>Pickup</option>
-        </select>
-      </label>
-      <Field label="Areas You Can Serve (within LGA)" value={values.areas} onChange={updateValue("areas")} placeholder="Enter locations" />
-      <div className="rounded-lg border border-[#e4e5e9] p-4">
-        <p className="text-xs font-medium text-[#303447]">Documents Upload</p>
-        <p className="mt-2 text-[11px] text-[#777b8b]">Upload a valid document to verify your business (CAC / NIN).</p>
-        <label className="mt-4 flex h-24 cursor-pointer flex-col items-center justify-center rounded-md border border-dashed border-[#d9dbe1] text-[#9ca0ad]">
-          <ImagePlus size={20} />
-          <span className="mt-1 text-[10px]">JPEG (10 mb)</span>
-          <input type="file" accept="image/jpeg,image/png,application/pdf" className="hidden" />
-        </label>
-      </div>
-    </div>
   );
 }

@@ -1,5 +1,5 @@
-import ProfilePage from "@/components/settings/ProfilePage";
+import { redirect } from "next/navigation";
 
-export default function VendorProfilePage() {
-  return <ProfilePage variant="vendor" />;
+export default function VendorSettingsPage() {
+  redirect("/vendor/settings/profile");
 }
