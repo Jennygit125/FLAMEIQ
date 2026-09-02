@@ -28,7 +28,7 @@ route.post('/api/auth/reset-password', authLimiter, resetPassword);
 route.put('/api/auth/profile', authenticate, updateProfile);
 route.patch('/api/auth/profile', authenticate, updateProfile);
 route.post('/api/auth/profile/picture', authenticate, upload.single('profileImage'), uploadProfilePicture);
-route.get('/api/auth/me', authenticate, getMe);
+route.get('/api/me', authenticate, getMe);
 route.delete('/api/auth/me', authenticate, deleteSelf);
 
 // Admin routes
