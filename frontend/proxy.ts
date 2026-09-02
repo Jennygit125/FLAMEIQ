@@ -7,7 +7,7 @@ const SECURE_ROUTES = ["/customer/profile", "/vendor/profile", "/customer", "/ve
 
 export function proxy(request: NextRequest) {
   
-  const token = request.cookies.get("flameintel_token")?.value;
+  const token = request.cookies.get("flameiq_token")?.value;
   const { pathname } = request.nextUrl;
 
   
