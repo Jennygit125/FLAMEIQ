@@ -1,36 +1,48 @@
-# ---- Base ----
-FROM node:22-alpine AS base
+# --- Base Stage ---
+FROM node:24.20-slim AS base
+
+# Configure pnpm home directory and update PATH
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+
+# Install pnpm globally using npm (recommended for Node 24+)
+RUN npm install -g pnpm@latest
+
 WORKDIR /app
-RUN corepack enable
 
-# ---- Dependencies ----
-FROM base AS deps
-COPY package.json pnpm-lock.yaml ./
-# Install all dependencies (postinstall scripts like prisma generate need dev deps)
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
+# --- Dependencies Stage ---
+FROM base AS dependencies
 
-# ---- Builder ----
-FROM base AS builder
+# Copy package configuration files
+COPY package.json pnpm-lock.yaml* ./
+
+# Install all dependencies using BuildKit caching
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm install --frozen-lockfile --ignore-scripts
+
+# --- Build Stage ---
+FROM dependencies AS build
+
+# Copy remaining source code and build the project
 COPY . .
-# Copy all node_modules from deps stage
-COPY --from=deps /app/node_modules ./node_modules
 RUN pnpm run build
 
-# ---- Runner ----
-FROM base AS runner
-
-# Copy production dependencies only
-COPY package.json pnpm-lock.yaml ./
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --frozen-lockfile
-
-# Copy built application
-COPY --from=builder /app/dist ./dist
-
-# Copy Prisma schema for runtime access
-COPY --from=builder /app/prisma ./prisma
+# --- Production Stage ---
+FROM base AS production
 
 ENV NODE_ENV=production
 
+# Copy package.json and pnpm-lock.yaml
+COPY package.json pnpm-lock.yaml* ./
+
+# Install all dependencies (tsx needed for runtime)
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm install --frozen-lockfile --ignore-scripts
+
+# Copy source and tsconfig for tsx runtime resolution
+COPY --from=build /app/src ./src
+COPY --from=build /app/tsconfig.json ./
+
 EXPOSE 3000
 
-CMD ["pnpm", "run", "dev"]
+CMD [ "pnpm", "exec", "tsx", "src/server.ts" ]

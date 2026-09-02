@@ -9,7 +9,8 @@ const SECURE_ROUTES = [
 ];
 
 export function proxy(request: NextRequest) {
-  const token = request.cookies.get("flameintel_token")?.value;
+  
+  const token = request.cookies.get("flameiq_token")?.value;
   const { pathname } = request.nextUrl;
 
   const isSecureRoute = SECURE_ROUTES.some((route) =>

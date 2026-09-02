@@ -1,23 +1,21 @@
 ﻿import axios from "axios";
 
 const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
+  baseURL: process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
-  // Essential for CORS with cookies/sessions across origins
   withCredentials: true,
-  timeout: 10000, // 10s timeout to prevent hanging requests
+  timeout: 10000,
 });
 
 // Request Interceptor
 apiClient.interceptors.request.use(
   (config) => {
-    // Only access localStorage on the client side
     if (typeof window !== "undefined") {
+      // Synchronized key name with AuthProvider
       const token = localStorage.getItem("flameiq_token");
       if (token) {
-        // Axios v1+ header assignment syntax
         config.headers.set("Authorization", `Bearer ${token}`);
       }
     }
@@ -28,14 +26,14 @@ apiClient.interceptors.request.use(
 
 // Response Interceptor
 apiClient.interceptors.response.use(
-  (response) => response.data, // Unwraps response so you get `data` directly
+  (response) => response.data,
   (error) => {
     const status = error.response?.status;
 
     if (status === 401 && typeof window !== "undefined") {
-      // Clear token and redirect on unauthorized access
       localStorage.removeItem("flameiq_token");
-      window.location.href = "/login";
+      localStorage.removeItem("user");
+      // Optional: Emit event or rely on AuthProvider to route to /login
     }
 
     return Promise.reject({

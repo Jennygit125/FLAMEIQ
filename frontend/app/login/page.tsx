@@ -55,13 +55,17 @@ export default function LoginPage() {
         throw new Error("Invalid login response from server.");
       }
 
-      // FIXED: Passed token first, user second (matches AuthContext signature)
+      // Keep the AuthContext in sync and send each role to a valid dashboard.
       login(token, user);
 
       const targetRoute =
-        user?.role === "VENDOR" ? "/vendor/dashboard" : "/customer/dashboard";
-      
-      router.push(targetRoute);
+        user?.role === "VENDOR"
+          ? "/vendor/dashboard"
+          : user?.role === "ADMIN"
+            ? "/customer/dashboard"
+            : "/customer/dashboard";
+
+      router.replace(targetRoute);
     } catch (err: any) {
       console.error("Login error:", err);
       setError(

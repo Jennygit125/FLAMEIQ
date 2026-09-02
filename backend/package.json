@@ -5,8 +5,7 @@
   "main": "dist/server.js",
   "scripts": {
     "build": "tsc",
-    "postinstall": "prisma generate",
-    "start": "tsx dist/server.js",
+    "start": "node dist/server.js",
     "dev": "tsx src/server.ts",
     "typecheck": "tsc --noEmit",
     "prisma:generate": "prisma generate",
@@ -23,7 +22,7 @@
     "FlameIQ",
     "Hackathon"
   ],
-  "author": "",
+  "author": "BAKRE, Eniola Dahud",
   "license": "ISC",
   "engines": {
     "node": ">=22.0.0",
@@ -48,8 +47,6 @@
     "node-forge": "^1.4.0",
     "nodemailer": "^9.0.4",
     "pg": "^8.13.3",
-    "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-express": "^5.0.1",
     "tsx": "^4.23.12",
     "winston": "^3.19.0",
     "zod": "^4.4.3"
@@ -66,8 +63,6 @@
     "@types/nodemailer": "^8.0.1",
     "@types/pg": "^8.11.11",
     "@types/supertest": "^2.0.12",
-    "@types/swagger-jsdoc": "^6.0.4",
-    "@types/swagger-ui-express": "^4.1.8",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
     "eslint": "^9.0.0",

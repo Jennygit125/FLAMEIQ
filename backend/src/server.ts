@@ -1,17 +1,14 @@
-import './types/express.d.js';
 import express from 'express'
 import dotenv from 'dotenv'
 import { corsConfig } from './middleware/corsConfig.js';
 import { config } from './config/index.js';
 import { fileURLToPath } from 'url'
-import multer from 'multer';
 import route from './routes/routes.js';
 import { predictionJob } from './jobs/predictionJob.js';
 import { payoutJob } from './jobs/payoutJob.js';
 import createRoutesRouter from './routes/listRoutes.js';
 import ipTracker from './utils/ipTracker.js';
 import httpLogger from './utils/httpLogger.js';
-import { setupSwagger } from './config/swagger.js';
 import { generalLimiter, } from './middleware/rateLimiter.js';
 import { errorHandler } from './middleware/errorHandler.js';
 // dotenv.config() is now handled by src/config/index.ts
@@ -19,6 +16,7 @@ dotenv.config()
 
 
 const app = express()
+app.set('trust proxy', 1);
 
 app.use(corsConfig)
 app.use(express.json())
@@ -28,10 +26,8 @@ app.use(httpLogger)
 app.use(generalLimiter);
 
 // Multer setup for in-memory file storage
-const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
-
-setupSwagger(app)
+//const storage = multer.memoryStorage();
+//const upload = multer({ storage: storage });
 
 app.get('/', (req, res) => {
   res.send('FLAMEIQ backend running')
