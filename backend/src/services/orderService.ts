@@ -12,10 +12,20 @@ import {
 } from '../utils/errors.js';
 
 
-// Use a type for creation that doesn't require all Order fields
 type OrderItemCreateInput = Omit<OrderItem, 'id' | 'orderId' | 'price'> & {
   price: number | Prisma.Decimal;
 };
+
+function getCylinderSizeInKg(size: any): number {
+  switch(size) {
+    case 'KG_3': return 3;
+    case 'KG_6': return 6;
+    case 'KG_12': return 12;
+    case 'KG_12_5': return 12.5;
+    case 'KG_25': return 25;
+    default: return 0;
+  }
+}
 
 const PLATFORM_COMMISSION_RATE = config.platformCommissionRate;
 
@@ -35,7 +45,55 @@ class OrderService {
       throw new BadRequestError('User ID, Vendor ID, and items are required to create an order.');
     }
 
-    const totalAmount = items.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0);
+    // Fetch the vendor's listing to securely get price and max limits
+    const vendorListing = await prisma.vendorListing.findUnique({
+      where: { vendorId },
+    });
+
+    if (!vendorListing) {
+      throw new BadRequestError('This vendor does not have an active listing.');
+    }
+
+    let totalKg = 0;
+    const pricePerKg = Number(vendorListing.pricePerKg);
+
+    const processedItems = items.map((item) => {
+      // Ensure quantity has at most 1 decimal place
+      const roundedQuantity = Math.round(Number(item.quantity) * 10) / 10;
+      if (roundedQuantity <= 0) {
+        throw new BadRequestError('Quantity must be greater than 0.');
+      }
+      totalKg += roundedQuantity;
+
+      return {
+        name: item.name,
+        quantity: new Prisma.Decimal(roundedQuantity),
+        price: new Prisma.Decimal(pricePerKg),
+      };
+    });
+
+    if (totalKg > Number(vendorListing.maxKg)) {
+      throw new BadRequestError(`Total requested amount (${totalKg}kg) exceeds the vendor's maximum limit of ${vendorListing.maxKg}kg.`);
+    }
+
+    if (cylinderId) {
+      const cylinder = await prisma.cylinder.findUnique({ where: { id: cylinderId } });
+      if (!cylinder) {
+        throw new BadRequestError('Selected cylinder not found.');
+      }
+      if (cylinder.userId !== userId) {
+        throw new UnauthorizedError('Cylinder does not belong to the user.');
+      }
+      
+      const maxCylinderKg = getCylinderSizeInKg(cylinder.size);
+      if (totalKg > maxCylinderKg) {
+        throw new BadRequestError(`Total requested amount (${totalKg}kg) exceeds the selected cylinder's maximum capacity of ${maxCylinderKg}kg.`);
+      }
+    } else {
+      throw new BadRequestError('Cylinder ID is required to determine maximum quantity.');
+    }
+
+    const totalAmount = totalKg * pricePerKg;
     const commission = totalAmount * PLATFORM_COMMISSION_RATE;
     const payoutAmount = totalAmount - commission;
 
@@ -55,10 +113,7 @@ class OrderService {
             cylinderId,
             status: OrderStatus.PAYMENT_PENDING, // ← awaits payment before vendor is notified
             items: {
-              create: items.map((item) => ({
-                ...item,
-                price: new Prisma.Decimal(item.price),
-              })),
+              create: processedItems,
             },
           },
           include: { items: true },

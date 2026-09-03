@@ -17,6 +17,7 @@ import paymentRoutes from './routesF/paymentRoutes.js';
 import payoutRoutes from './routesF/payoutRoutes.js';
 import cylinderRoutes from './routesF/cylinderRoutes.js';
 import reviewRoutes from './routesF/reviewRoutes.js';
+import vendorRoutes from './routesF/vendorRoutes.js';
 //import predictionRoutes from './routes/predictionRoutes.js';
 import createRoutesRouter from './routesF/routes.js';
 import ipTracker from './utils/ipTracker.js';
@@ -642,6 +643,15 @@ app.use('/api/orders', orderRoutes);
  *         description: Server error.
  */
 app.use('/api/cylinders', cylinderRoutes);
+
+// --- Vendor Routes ---
+/**
+ * @swagger
+ * tags:
+ *   name: Vendors
+ *   description: API for managing vendor specific logic
+ */
+app.use('/api/vendors', vendorRoutes);
 
 // --- Review Routes ---
 /**
