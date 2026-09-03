@@ -9,7 +9,7 @@ export default function Loading() {
             <div className="relative h-20 w-44">
               <Image
                 src="/images/logo.png"
-                alt="FlameIQ logo"
+                alt="FlameIntel logo"
                 fill
                 priority
                 className="object-contain"
@@ -29,7 +29,7 @@ export default function Loading() {
           <div className="relative h-[320px] w-full max-w-sm mx-auto">
             <Image
               src="/images/load-cylinder.png"
-              alt="FlameIQ gas cylinder"
+              alt="FlameIntel gas cylinder"
               fill
               priority
               className="object-contain"

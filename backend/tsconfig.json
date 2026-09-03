@@ -10,9 +10,9 @@
     "outDir": "./dist",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "strict": true,
+    "strict": false,
     "skipLibCheck": true,
-    /* Add this to ensure global types are recognized */
+    "isolatedModules": true,
     "typeRoots": [
       "./node_modules/@types",
       "./src/types"

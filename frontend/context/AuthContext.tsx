@@ -1,83 +1,120 @@
-"use client";
+'use client';
 
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  ReactNode,
-} from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import Cookies from 'js-cookie';
+import apiClient from '@/services/apiClient'; // Path to your apiClient
 
-interface User {
+export interface UserProfile {
+  id: string;
+  profileType: 'USER' | 'VENDOR' | 'ADMIN';
+  isVerified: boolean;
+  businessName?: string;
+  phone?: string;
+  address?: string;
+  profilePic?: string;
+}
+
+export interface User {
   id: string;
   name: string;
   email: string;
-  role?: string;
+  role: 'USER' | 'ADMIN' | 'VENDOR';
+  profile?: UserProfile | null;
+  phone?: string;
+  address?: string;
+  avatar?: string;
 }
 
-interface AuthContextValue {
+interface AuthContextType {
   user: User | null;
-  login: (userData: User, token: string) => void;
+  token: string | null;
+  isLoading: boolean;
+  login: (token: string, user: User) => void;
   logout: () => void;
+  updateUser: (updatedUser: Partial<User>) => void;
 }
 
-const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-interface AuthProviderProps {
-  children: ReactNode;
-}
+const TOKEN_KEY = 'flameiq_token';
 
-export function AuthProvider({ children }: AuthProviderProps) {
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const storedUser = localStorage.getItem("flameiq_user");
-      if (storedUser) {
-        try {
-          setUser(JSON.parse(storedUser));
-        } catch (error) {
-          console.error("Unable to restore user:", error);
-          localStorage.removeItem("flameiq_user");
-        }
-      }
-    }
+  const logout = useCallback(() => {
+    setToken(null);
+    setUser(null);
+    Cookies.remove(TOKEN_KEY);
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem('user');
   }, []);
 
-  const login = (userData: User, token: string) => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("flameiq_token", token);
-      localStorage.setItem("flameiq_user", JSON.stringify(userData));
-    }
-    setUser(userData);
-  };
+  const login = useCallback((newToken: string, newUser: User) => {
+    setToken(newToken);
+    setUser(newUser);
+    Cookies.set(TOKEN_KEY, newToken, { expires: 7, path: '/' });
+    localStorage.setItem(TOKEN_KEY, newToken);
+    localStorage.setItem('user', JSON.stringify(newUser));
+  }, []);
 
-  const logout = () => {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("flameiq_token");
-      localStorage.removeItem("flameiq_user");
+  const updateUser = useCallback((updatedUser: Partial<User>) => {
+    setUser((prev) => {
+      if (!prev) return null;
+      const merged = { ...prev, ...updatedUser };
+      localStorage.setItem('user', JSON.stringify(merged));
+      return merged;
+    });
+  }, []);
+
+  useEffect(() => {
+    const activeToken = Cookies.get(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY);
+    const savedUser = localStorage.getItem('user');
+
+    if (!activeToken) {
+      setIsLoading(false);
+      return;
     }
-    setUser(null);
-    window.location.href = "/login";
-  };
+
+    setToken(activeToken);
+
+    if (savedUser) {
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch (err) {
+        console.error('Failed to parse cached user', err);
+      }
+    }
+
+    // Use apiClient instead of fetch
+    apiClient
+      .get<{ success: boolean; data: User }>('/me')
+      .then((res: any) => {
+        if (res.success) {
+          setUser(res.data);
+          localStorage.setItem('user', JSON.stringify(res.data));
+        } else {
+          logout();
+        }
+      })
+      .catch(() => {
+        // Keep cached state on network failure
+      })
+      .finally(() => setIsLoading(false));
+  }, [logout]);
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        login,
-        logout,
-      }}
-    >
+    <AuthContext.Provider value={{ user, token, isLoading, login, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );
-}
+};
 
-export function useAuth() {
+export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error("useAuth must be used inside an AuthProvider");
+    throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-}
+};

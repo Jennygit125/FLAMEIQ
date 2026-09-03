@@ -3,7 +3,7 @@
 import { useRef } from "react";
 
 export default function OtpInput({
-  length = 4,
+  length = 6,
   value,
   onChange,
 }: {

@@ -1,37 +1,66 @@
-import { CheckCircle2, Circle } from "lucide-react";
+import { Check, Truck, MapPin, Circle } from "lucide-react";
 
 const TIMELINE = [
   {
     label: "Order Placed",
     time: "Today, 10:15 AM",
-    description: "You've been successfully placed your order.",
-    done: true,
+    description: "Your order has been placed successfully.",
+    status: "done" as const,
   },
   {
     label: "Order Confirmed",
-    time: "Today, 10:20 AM",
-    description: "Your order has been confirmed by the vendor.",
-    done: true,
+    time: "Today, 10:18 AM",
+    description: "Your order has been confirmed by FlameIntel.",
+    status: "done" as const,
   },
   {
     label: "On the way",
     time: "Today, 10:45 AM",
-    description: "Your delivery person is on the way to you.",
-    done: true,
+    description: "Your delivery personnel is on the way to you.",
+    status: "active" as const,
   },
   {
     label: "Arriving soon",
-    time: "Est. 11:25 AM",
-    description: "Your order will arrive within a few minutes.",
-    done: false,
+    time: "Est, 11:35 AM",
+    description: "Your delivery personnel will arrive shortly.",
+    status: "pending" as const,
   },
   {
     label: "Delivered",
-    time: "Pending",
-    description: "Your order will be marked delivered here.",
-    done: false,
+    time: "",
+    description: "Your order will be marked as delivered upon arrival.",
+    status: "pending" as const,
   },
 ];
+
+function StepIcon({ status, isLast }: { status: "done" | "active" | "pending"; isLast: boolean }) {
+  if (status === "done") {
+    return (
+      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-500 text-white">
+        <Check size={13} />
+      </span>
+    );
+  }
+  if (status === "active") {
+    return (
+      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-500 text-white">
+        <Truck size={13} />
+      </span>
+    );
+  }
+  if (isLast) {
+    return (
+      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-muted-200 text-muted-400">
+        <Circle size={9} fill="currentColor" strokeWidth={0} />
+      </span>
+    );
+  }
+  return (
+    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-muted-200 text-muted-400">
+      <MapPin size={12} />
+    </span>
+  );
+}
 
 export default function DeliveryTimeline() {
   return (
@@ -42,15 +71,11 @@ export default function DeliveryTimeline() {
         {TIMELINE.map((item, i) => (
           <div key={item.label} className="flex gap-3">
             <div className="flex flex-col items-center">
-              {item.done ? (
-                <CheckCircle2 size={18} className="text-brand-500" />
-              ) : (
-                <Circle size={18} className="text-muted-200" />
-              )}
+              <StepIcon status={item.status} isLast={i === TIMELINE.length - 1} />
               {i < TIMELINE.length - 1 && (
                 <div
                   className={`w-px flex-1 ${
-                    item.done ? "bg-brand-500" : "bg-border"
+                    item.status === "done" ? "bg-brand-500" : "bg-border"
                   }`}
                   style={{ minHeight: "28px" }}
                 />
@@ -61,9 +86,11 @@ export default function DeliveryTimeline() {
                 <span className="text-sm font-medium text-ink-500">
                   {item.label}
                 </span>
-                <span className="text-[11px] text-muted-500">
-                  {item.time}
-                </span>
+                {item.time && (
+                  <span className="text-[11px] text-muted-500">
+                    {item.time}
+                  </span>
+                )}
               </div>
               <p className="text-xs text-muted-500">{item.description}</p>
             </div>

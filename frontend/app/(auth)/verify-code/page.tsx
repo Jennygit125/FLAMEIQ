@@ -5,15 +5,22 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Mail } from "lucide-react";
 import OtpInput from "@/components/ui/OtpInput";
 import AuthIconBadge from "@/components/ui/AuthIconBadge";
-import { verifyResetCode, sendPasswordReset } from "@/services/authService";
+import {
+  verifySignupCode,
+  sendPasswordReset,
+  resendSignupCode,
+} from "@/services/authService";
 import SuccessModal from "@/components/modals/SuccessModal";
+
+const OTP_LENGTH = 6;
 
 function VerifyCodeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email") ?? "";
+  const purpose = searchParams.get("purpose") === "signup" ? "signup" : "reset";
 
-  const [code, setCode] = useState(["", "", "", ""]);
+  const [code, setCode] = useState<string[]>(Array(OTP_LENGTH).fill(""));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [verified, setVerified] = useState(false);
@@ -26,8 +33,21 @@ function VerifyCodeContent() {
     setLoading(true);
     try {
       const joinedCode = code.join("");
-      await verifyResetCode({ email, code: joinedCode });
-      setVerified(true);
+
+      if (purpose === "signup") {
+        await verifySignupCode({ email, otp: joinedCode });
+        // Signup verification is the final step — show the success
+        // confirmation, then the user logs in manually from /login.
+        setVerified(true);
+      } else {
+        // The backend has no separate reset-code verification endpoint —
+        // it's checked together with the new password in one call. So
+        // here we only confirm the code is complete, then carry it
+        // forward to /reset-password where the real check happens.
+        router.push(
+          `/reset-password?email=${encodeURIComponent(email)}&code=${encodeURIComponent(joinedCode)}`
+        );
+      }
     } catch {
       setError("Invalid code. Please check and try again.");
     } finally {
@@ -36,14 +56,28 @@ function VerifyCodeContent() {
   };
 
   const handleResend = async () => {
-    setCode(["", "", "", ""]);
+    setCode(Array(OTP_LENGTH).fill(""));
     setError("");
     try {
-      await sendPasswordReset({ email });
+      if (purpose === "signup") {
+        await resendSignupCode({ email });
+      } else {
+        await sendPasswordReset({ email });
+      }   
     } catch {
-      setError("Unable to resend code. Please try again.");
+      setError(
+        purpose === "signup"
+          ? "Resend isn't available yet — please check your inbox, or contact support if the code expired."
+          : "Unable to resend code. Please try again."
+      );
     }
   };
+
+  const heading = purpose === "signup" ? "Verify Your Email" : "Enter Code";
+  const subtitle =
+    purpose === "signup"
+      ? "We've sent a verification code to your email to confirm your account."
+      : "We have sent a password reset instruction to you.";
 
   return (
     <div className="w-full max-w-sm">
@@ -52,15 +86,13 @@ function VerifyCodeContent() {
           <Mail size={22} className="text-link-500" />
         </AuthIconBadge>
         <h1 className="font-heading mt-4 text-xl font-bold text-ink-500">
-          Enter Code
+          {heading}
         </h1>
-        <p className="mt-2 text-sm text-muted-500">
-          We have sent a password reset instruction to you.
-        </p>
+        <p className="mt-2 text-sm text-muted-500">{subtitle}</p>
       </div>
 
       <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-4">
-        <OtpInput value={code} onChange={setCode} />
+        <OtpInput length={OTP_LENGTH} value={code} onChange={setCode} />
 
         {error && (
           <p className="text-center text-xs text-error">{error}</p>
@@ -77,7 +109,7 @@ function VerifyCodeContent() {
         <button
           type="submit"
           disabled={!isComplete || loading}
-          className="rounded-lg px-5 py-2.5 text-sm font-semibold bg-[#1f4e79] text-white hover:bg-[#1f4e79] disabled:cursor-not-allowed disabled:opacity-60 w-full"
+          className="rounded-lg px-5 py-2.5 text-sm font-semibold bg-brand-500 text-white hover:bg-brand-500 disabled:cursor-not-allowed disabled:opacity-60 w-full"
         >
           {loading ? "Verifying…" : "Proceed"}
         </button>
@@ -90,12 +122,13 @@ function VerifyCodeContent() {
         </button>
       </form>
 
-
-      <SuccessModal
-        isOpen={verified}
-        message="You're now ready to explore FlameIQ!"
-        redirectTo="/login"
-      />
+      {purpose === "signup" && (
+        <SuccessModal
+          isOpen={verified}
+          message="Your account has been verified. You're now ready to explore FlameIntel!"
+          redirectTo="/login"
+        />
+      )}
     </div>
   );
 }

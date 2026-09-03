@@ -103,3 +103,17 @@ body {
   --color-notify-50: #2E2408;
   --color-notify-700: #F6C750;
 }
+/* Mobile tap feedback. Browsers vary in whether they show any default
+   press state on touch, and hover: never fires on touch devices, so
+   every button/link needs an explicit, intentional pressed state. */
+a,
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (hover: none) {
+  a:active,
+  button:active {
+    opacity: 0.7;
+  }
+}

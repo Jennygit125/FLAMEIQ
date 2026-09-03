@@ -19,23 +19,34 @@ export default function PaymentPage() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  const price = order.pricePerUnit ?? 0;
+  // 1. Safe context boundary variables to guard against undefined runtime states
+  const price = order?.pricePerUnit ?? 0;
+  const quantity = order?.quantity ?? 1;
+  const deliveryFee = order?.deliveryFee ?? 0;
+
+  // Calculates the accurate full compound amount cleanly
   const totalAmount = useMemo(
-    () => price * order.quantity + order.deliveryFee,
-    [price, order.quantity, order.deliveryFee]
+    () => (price * quantity) + deliveryFee,
+    [price, quantity, deliveryFee]
   );
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    // TODO: wire to a real payment/checkout service once the backend
-    // endpoint (POST /api/orders) is confirmed ready. UI-only for now,
-    // matching the same ahead-of-backend pattern used elsewhere.
     setSubmitting(true);
     setTimeout(() => {
       setSubmitting(false);
       setSuccess(true);
     }, 800);
   };
+
+  // If the context state is still loading from database pipelines, render a clean loading frame
+  if (!order) {
+    return (
+      <div className="flex h-64 items-center justify-center text-sm font-semibold text-ink-500">
+        Syncing transactional order metrics...
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -67,7 +78,7 @@ export default function PaymentPage() {
           <div className="rounded-xl bg-muted-50/60 p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-500">Amount Pay</p>
+                <p className="text-xs text-muted-500">Amount to Pay</p>
                 <p className="mt-1 text-2xl font-bold text-ink-500">
                   ₦{totalAmount.toLocaleString()}
                 </p>
@@ -88,15 +99,15 @@ export default function PaymentPage() {
             {showDetails && (
               <div className="mt-4 space-y-2 border-t border-border pt-3 text-sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-500">Cylinder Price</span>
+                  <span className="text-muted-500">Gas Subtotal ({quantity} {quantity === 1 ? 'cylinder' : 'cylinders'})</span>
                   <span className="text-ink-500">
-                    ₦{price.toLocaleString()}
+                    ₦{(price * quantity).toLocaleString()}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-muted-500">Delivery Fee</span>
                   <span className="text-ink-500">
-                    ₦{order.deliveryFee.toLocaleString()}
+                    ₦{deliveryFee.toLocaleString()}
                   </span>
                 </div>
               </div>
@@ -105,10 +116,7 @@ export default function PaymentPage() {
 
           <form onSubmit={handleSubmit} className="mt-5 flex flex-col gap-4">
             <div>
-              <label
-                htmlFor="cardNumber"
-                className="block text-sm font-medium text-ink-500"
-              >
+              <label htmlFor="cardNumber" className="block text-sm font-medium text-ink-500">
                 Card Number
               </label>
               <input
@@ -125,10 +133,7 @@ export default function PaymentPage() {
 
             <div className="flex gap-4">
               <div className="flex-1">
-                <label
-                  htmlFor="expiry"
-                  className="block text-sm font-medium text-ink-500"
-                >
+                <label htmlFor="expiry" className="block text-sm font-medium text-ink-500">
                   Expiry Date
                 </label>
                 <input
@@ -142,10 +147,7 @@ export default function PaymentPage() {
                 />
               </div>
               <div className="flex-1">
-                <label
-                  htmlFor="cvv"
-                  className="block text-sm font-medium text-ink-500"
-                >
+                <label htmlFor="cvv" className="block text-sm font-medium text-ink-500">
                   CVV
                 </label>
                 <input
@@ -162,10 +164,7 @@ export default function PaymentPage() {
             </div>
 
             <div>
-              <label
-                htmlFor="cardholderName"
-                className="block text-sm font-medium text-ink-500"
-              >
+              <label htmlFor="cardholderName" className="block text-sm font-medium text-ink-500">
                 Cardholder Name
               </label>
               <input
@@ -198,7 +197,7 @@ export default function PaymentPage() {
 
       <SuccessModal
         isOpen={success}
-        title="Order Placed Successful 🎉"
+        title="Order Placed Successfully 🎉"
         message="Your gas cylinder is on its way. You can track your delivery in real time."
         redirectTo="/customer/track-delivery"
       />

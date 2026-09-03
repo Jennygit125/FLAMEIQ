@@ -43,7 +43,7 @@ export default function RoleSelectionModal({
   const [selectedRole, setSelectedRole] = useState<Portal>(defaultRole);
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} className="max-w-[425px]">
+    <Modal isOpen={isOpen} onClose={onClose} className="max-w-106.25">
       <div className="text-center">
         <h2 className="font-heading text-xl font-bold text-ink-500">
           Choose Your Role
@@ -89,7 +89,7 @@ export default function RoleSelectionModal({
               </span>
 
               <span
-                className={`mt-1 flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border-2 ${
+                className={`mt-1 flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full border-2 ${
                   isSelected ? "border-brand-500" : "border-muted-200"
                 }`}
               >

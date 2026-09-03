@@ -1,10 +1,11 @@
+"use client";
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   ShoppingCart,
   Truck,
-  Wallet,
   Settings,
   Package,
   ClipboardList,
@@ -22,7 +23,6 @@ const NAV_ITEMS: Record<Portal, NavItem[]> = {
     { path: "dashboard", label: "Home", icon: LayoutDashboard },
     { path: "orders", label: "Order Gas", icon: ShoppingCart },
     { path: "track-delivery", label: "Track", icon: Truck },
-    { path: "wallet", label: "Wallet", icon: Wallet },
     { path: "settings", label: "Settings", icon: Settings },
   ],
   vendor: [
@@ -41,19 +41,22 @@ export default function BottomNav({ portal }: { portal: Portal }) {
   return (
     <nav className="fixed inset-x-0 bottom-0 flex justify-around border-t border-border bg-card py-2 md:hidden">
       {items.map(({ path, label, icon: Icon }) => {
-        const isActive = pathname?.includes(`/${portal}/${path}`);
+        const href = `/${portal}/${path}`;
+        const isActive = pathname === href || pathname?.startsWith(`${href}/`);
+
         return (
           <Link
             key={path}
-            href={`/${portal}/${path}`}
-            className={`flex flex-col items-center justify-center gap-1 rounded-xl px-4 py-1.5 transition-all ${
-              isActive 
-                ? "text-white bg-[#1e40af] shadow-md shadow-blue-500/30" 
-                : "text-ink-500"
+            href={href}
+            className={`flex flex-col items-center gap-0.5 rounded-lg px-3 py-1 text-[11px] transition-colors active:bg-brand-50 ${
+              isActive ? "text-brand-500" : "text-ink-500"
             }`}
           >
-            <Icon size={20} className={isActive ? "text-white" : "text-muted-500"} />
-            <span className={`text-[10px] font-medium ${isActive ? "text-white" : ""}`}>{label}</span>
+            <Icon
+              size={19}
+              className={isActive ? "text-brand-500" : "text-muted-500"}
+            />
+            {label}
           </Link>
         );
       })}

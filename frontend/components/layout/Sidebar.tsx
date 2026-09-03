@@ -1,27 +1,25 @@
 "use client";
 
-import { useState } from "react";
+//import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   ShoppingCart,
   Truck,
   Zap,
-  Wallet,
-  Store,
   Settings,
   Package,
-  BarChart3,
   DollarSign,
   ClipboardList,
   LogOut,
   Bot,
-  Moon,
   X,
+  HistoryIcon,
 } from "lucide-react";
-import { useTheme} from "@/context/ThemeContext";
+//import { useTheme} from "@/context/ThemeContext";
 import type { Portal } from "@/types/portal";
+import { useAuth } from "@/context/AuthContext";
 
 type NavItem = {
   path: string;
@@ -36,13 +34,12 @@ const NAV_ITEMS: Record<Portal, NavItem[]> = {
     { path: "track-delivery", label: "Track Order", icon: Truck },
     { path: "smart-refill", label: "Smart Refill", icon: Zap },
     { path: "ai-assistant", label: "AI Assistant", icon: Bot },
-    { path: "vendor-inquiry", label: "Vendor Inquiry", icon: Store },
+    { path: "orders/history", label: "order history", icon: HistoryIcon },
     { path: "settings", label: "Settings", icon: Settings },
   ],
   vendor: [
     { path: "dashboard", label: "Home", icon: LayoutDashboard },
     { path: "inventory", label: "Inventory", icon: Package },
-    { path: "analytics", label: "Analytics", icon: BarChart3 },
     { path: "earnings", label: "Earnings", icon: DollarSign },
     { path: "orders", label: "Orders", icon: ClipboardList },
     { path: "settings", label: "Settings", icon: Settings },
@@ -60,7 +57,9 @@ export default function Sidebar({
 }) {
   const items = NAV_ITEMS[portal];
   const pathname = usePathname();
-  const [lightMode, setLightMode] = useState(true);
+  const router = useRouter();
+  const { logout } = useAuth();
+ // const [lightMode, setLightMode] = useState(true);
 
   return (
     <>
@@ -91,50 +90,50 @@ export default function Sidebar({
 
         <div className="flex flex-1 flex-col gap-1">
           {items.map(({ path, label, icon: Icon }) => {
-            const isActive = pathname?.includes(`/${portal}/${path}`);
+            const href = `/${portal}/${path}`;
+            const isActive =
+              pathname === href || pathname?.startsWith(`${href}/`);
+
             return (
               <Link
                 key={path}
-                href={`/${portal}/${path}`}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all ${
-                  isActive 
-                    ? "bg-[#1e40af] text-white shadow-md shadow-blue-500/20 font-medium" 
-                    : "text-ink-500 hover:bg-brand-50"
+                href={href}
+                className={`group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
+                  isActive
+                    ? "bg-brand-500 text-white"
+                    : "text-ink-500 hover:bg-muted-50"
                 }`}
               >
-                <Icon size={17} className={isActive ? "text-white" : "text-muted-500"} />
+                <Icon
+                  size={17}
+                  className={
+                    isActive
+                      ? "text-white"
+                      : "text-muted-500 group-hover:text-ink-500"
+                  }
+                />
                 {label}
+
+                {isActive && (
+                  <span className="absolute right-2 top-1/2 h-4 w-1 -translate-y-1/2 rounded-full bg-notify-500" />
+                )}
               </Link>
             );
           })}
         </div>
 
         <div className="mt-auto flex flex-col gap-1 border-t border-border pt-3">
-          <button className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-ink-500 hover:bg-brand-50">
+          <button
+            onClick={() => {
+              logout();
+              router.push("/login");
+            }}
+            className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-ink-500 hover:bg-brand-50"
+          >
             <LogOut size={17} className="text-muted-500" />
             Log Out
           </button>
 
-          <button
-            onClick={() => setLightMode((prev) => !prev)}
-            className="flex items-center justify-between rounded-lg px-3 py-2 text-sm text-ink-500 hover:bg-brand-50"
-          >
-            <span className="flex items-center gap-3">
-              <Moon size={17} className="text-muted-500" />
-              Light Mode
-            </span>
-            <span
-              className={`relative h-5 w-9 rounded-full transition-colors ${
-                lightMode ? "bg-brand-500" : "bg-muted-100"
-              }`}
-            >
-              <span
-                className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${
-                  lightMode ? "translate-x-4" : "translate-x-0.5"
-                }`}
-              />
-            </span>
-          </button>
         </div>
       </nav>
     </>

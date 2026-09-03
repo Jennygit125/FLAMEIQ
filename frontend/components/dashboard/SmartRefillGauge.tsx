@@ -35,7 +35,7 @@ export default function SmartRefillGauge({
   const isCritical = percent < 40;
 
   return (
-    <div className="rounded-2xl bg-gradient-to-br from-brand-900 via-brand-700 to-brand-500 p-5 text-white">
+    <div className="rounded-2xl bg-linear-to-br from-brand-900 via-brand-700 to-brand-500 p-5 text-white">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-2">
           <h2 className="flex items-center gap-1.5 text-sm font-semibold">
