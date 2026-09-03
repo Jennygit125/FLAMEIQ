@@ -1,12 +1,11 @@
 import { Request, Response } from 'express';
 import { vendorListingService } from '../services/vendorListingService.js';
-import { catchAsync } from '../utils/catchAsync.js';
 import { AppError } from '../utils/errors.js';
 
 class VendorListingController {
-  public upsertListing = catchAsync(async (req: Request, res: Response) => {
+  public upsertListing = async (req: Request, res: Response) => {
     // `req.user` should contain the authenticated user's ID
-    const vendorId = req.user?.userId;
+    const vendorId = req.user?.id;
     const { pricePerKg, maxKg } = req.body;
 
     if (!vendorId) {
@@ -27,12 +26,12 @@ class VendorListingController {
       status: 'success',
       data: { listing },
     });
-  });
+  };
 
-  public getListing = catchAsync(async (req: Request, res: Response) => {
+  public getListing = async (req: Request, res: Response) => {
     // If a vendorId is passed in params, get that specific vendor's listing
     // Otherwise, get the authenticated vendor's listing
-    const vendorId = req.params.vendorId || req.user?.userId;
+    const vendorId = req.params.vendorId || req.user?.id;
 
     if (!vendorId) {
       throw new AppError('Vendor ID is required to fetch listing', 400);
@@ -44,7 +43,7 @@ class VendorListingController {
       status: 'success',
       data: { listing },
     });
-  });
+  };
 }
 
 export const vendorListingController = new VendorListingController();

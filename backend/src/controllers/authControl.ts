@@ -49,7 +49,7 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
       id: decoded.id,
       name: decoded.name,
       role: decoded.role,
-    };
+    } as any;
 
     return next();
   } catch (error) {

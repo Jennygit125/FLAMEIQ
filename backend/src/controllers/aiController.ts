@@ -15,7 +15,8 @@ export const chat = async (req: Request, res: Response) => {
     profileData = {
       name: req.user.name,
       address: req.user.profile.address,
-      household_size: req.user.profile.household_size,
+      household_size: (req.user?.profile as any)?.household_size,
+      cooking_frequency: (req.user?.profile as any)?.cooking_frequency,
     };
   }
 
