@@ -109,6 +109,7 @@ model User {
   destinationTransactions Transaction[]     @relation("DestinationTransactions")
   cylinders               Cylinder[]
   payouts                 Payout[]
+  vendorListing           VendorListing?
 
   @@index([email])
 }
@@ -282,7 +283,7 @@ model OrderItem {
   orderId  String
   order    Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   name     String
-  quantity Int
+  quantity Decimal // Changed from Int to support up to 1 decimal place (e.g. 1.5kg)
   price    Decimal
 
   @@index([orderId])
@@ -309,4 +310,14 @@ model Review {
 
   @@index([authorId])
   @@index([targetUserId])
+}
+
+model VendorListing {
+  id         String   @id @default(uuid())
+  vendorId   String   @unique
+  vendor     User     @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  pricePerKg Decimal
+  maxKg      Decimal
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
